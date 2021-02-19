@@ -1,0 +1,74 @@
+---
+title: The Apache SIS™ library
+---
+
+<p>Apache Spatial Information System (SIS) is a free software, Java language library for developing geospatial applications.
+SIS provides data structures for geographic features and associated metadata along with methods to manipulate those data structures.
+The library is an implementation of <a href="http://www.geoapi.org/">GeoAPI 3.0.1</a> interfaces and can be used for desktop or server applications.</p>
+<p>The SIS metadata module forms the base of the library and enables the creation of metadata objects which comply with the model of OGC/ISO international standards.
+The SIS referencing module enable the construction of geodetic data structures for geospatial referencing such as axis, projection and coordinate reference system definitions,
+along with the associated operations which enable the transformation of coordinates between different systems of reference.
+The SIS storage modules provide a common approach to the reading and writing of metadata, features and coverages
+applicable to simple imagery as to many dimensional data structures.</p>
+<p>Some Apache SIS features are:</p>
+<ul>
+<li>Geographic metadata (ISO 19115-1:2014)<ul>
+<li>Read from or written to ISO 19115-3:2016 (current standard) or ISO 19139:2007 (older standard) compliant XML documents.</li>
+<li>Read from netCDF, GeoTIFF, Landsat, GPX and Moving Feature CSV encoding.</li>
+<li>Automatic conversions between the metadata model published in 2003 and the revision published in 2014.</li>
+</ul>
+</li>
+<li>Referencing by coordinates (ISO 19111:2007)<ul>
+<li>Well Known Text (WKT) version 1 and 2 (ISO 19162:2015).</li>
+<li>Geographic Markup Language (GML) version 3.2 (ISO 19136:2007).</li>
+<li><a href="epsg.html">EPSG geodetic dataset</a> for geodetic definitions and for coordinate operations.
+  See the list of <a href="tables/CoordinateReferenceSystems.html">supported coordinate reference systems</a>.</li>
+<li>Mercator, Transverse Mercator, Lambert Conic Conformal, stereographic and more map projections.
+  See the list of <a href="tables/CoordinateOperationMethods.html">supported operation methods</a>.</li>
+</ul>
+</li>
+<li>Referencing by identifiers (ISO 19112:2003)<ul>
+<li>Geohashes (a simple encoding of geographic coordinates into short strings of letters and digits).</li>
+<li>Military Grid Reference System (MGRS), also used for some civilian uses.</li>
+</ul>
+</li>
+<li>Units of measurement<ul>
+<li>Implementation of <a href="https://www.jcp.org/aboutJava/communityprocess/final/jsr363/index.html">JSR-363</a>
+  with parsing, formating and unit conversion functionalities.</li>
+</ul>
+</li>
+</ul>
+<h2 id="user">Using Apache SIS<a class="headerlink" href="#user" title="Permanent link">&para;</a></h2>
+<p>The latest SIS release is 1.0, released September 2019.
+Apache SIS requires Java 10 or higher for building, but can be executed on Java 8 or higher.
+If using Java 8 Runtime Environment, nothing else is needed since Java 8 includes JAXB.
+If using Java 9 or higher, one of the following configurations is needed
+(those extra configurations are temporary until support for Java 8 will be dropped in a future SIS version):</p>
+<ul>
+<li>"<code>--add-modules java.xml.bind,java.xml.ws.annotation</code>" option (available with Java 9 or 10 only) added to the <code>java</code> command</li>
+<li>or JAXB dependency added from Glassfish or Jakarata projects. See <a href="downloads.html#maven">Maven coordinates</a>.</li>
+</ul>
+<p>The EPSG geodetic dataset is optional for licensing reasons, but recommended.
+EPSG database installation is <a href="epsg.html">described in a separated page</a>.</p>
+<p>Apache SIS is a Java library for use by other applications.
+Leveraging the full SIS capabilities or getting the best performance require that users write their own applications on top of SIS.
+However a command-line tool is provided for allowing users to experiment some SIS functionalities before writing code.</p>
+<ul>
+<li><a href="downloads.html">Downloads</a> as a <code>zip</code> files or as Maven dependencies.</li>
+<li><a href="book/index.html">Developer guide</a> — note that this is work in progress.</li>
+<li><a href="apidocs/index.html">Online Javadoc</a> for API documentation.</li>
+<li><a href="command-line.html">Command-line interface</a> for an overview of the command-line tool.</li>
+<li><a href="code-patterns.html">Recommended code patterns</a> for writing more robust applications with Apache SIS.</li>
+</ul>
+<h2 id="developer">Developing Apache SIS<a class="headerlink" href="#developer" title="Permanent link">&para;</a></h2>
+<p>Following links are for those who wish to contribute to Apache SIS:</p>
+<ul>
+<li><a href="contributor.html">New contributor</a>: background knowledge.</li>
+<li><a href="source.html">Source code</a>: fetching the code, choosing a branch, opening in an IDE.</li>
+<li><a href="coding-conventions.html">Coding conventions</a>: source code formatting.</li>
+<li><a href="build.html">Build</a>: build from the source, create the distribution file.</li>
+<li><a href="http://issues.apache.org/jira/browse/SIS">Issue tracking</a>: JIRA.</li>
+<li><a href="release-management.html">Release management</a> (for release managers)</li>
+<li><a href="site-management.html">Web site management</a> (for release managers and site maintainers)</li>
+<li><a href="http://cwiki.apache.org/confluence/display/SIS">SIS Wiki</a> for "drawing board" and roadmap.</li>
+</ul>
