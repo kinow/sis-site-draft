@@ -22,7 +22,7 @@ This is the source code for the website of [Apache SIS](https://sis.apache.org/)
 
 ## Repository structure
 
-This repository uses 3 branches for building the website.
+This repository uses 2 branches for building the website.
 - The `master` branch, which contains all the sources for the website.
 - The `asf-site` branch, which contains the generated website being used for the actual website.
 
