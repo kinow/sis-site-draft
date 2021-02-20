@@ -16,7 +16,7 @@ ignoreFiles = [ ] # No files to ignore
 
 # Highlighting config. See https://help.farbox.com/pygments.html
 pygmentsCodeFences = true
-pygmentsUseClasses = false
+pygmentsUseClasses = true
 pygmentsStyle = "emacs"
 
 # Enable Git variables like commit, lastmod
@@ -38,3 +38,8 @@ repositorySourceBranch = "master"
 
 siteRepositoryUrl = "https://github.com/apache/sis-site"
 siteRepositorySourceBranch = "master"
+
+[markup.tableOfContents]
+startLevel = 1
+endLevel = 5
+ordered = false
