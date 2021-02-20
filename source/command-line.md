@@ -2,76 +2,67 @@
 title: Command-line interface
 ---
 
-<p>A command-line interface is provided for extracting information from data files or authority codes,
+A command-line interface is provided for extracting information from data files or authority codes,
 and for performing coordinate operations.
 That command-line tool is provided for allowing users to experiment some Apache SIS functionalities
 without writing Java code.
 For each example, key Java APIs are listed for allowing users to reproduce the functionality
-in their own application.</p>
-<div class="toc">
-<ul>
-<li><a href="#install">Installation</a><ul>
-<li><a href="#dependencies">Optional dependencies</a></li>
-</ul>
-</li>
-<li><a href="#usage">Usage</a></li>
-<li><a href="#examples">Examples</a><ul>
-<li><a href="#crs">Print Coordinate Reference Systems (CRS) definition</a></li>
-<li><a href="#identifier">Getting a verified EPSG identifier from a Coordinate Reference System</a></li>
-<li><a href="#coordinateOperation">Performing coordinate conversions or transformations</a></li>
-<li><a href="#metadata">Extracting ISO 19115 Metadata</a></li>
-</ul>
-</li>
-<li><a href="#performance">Performance consideration</a></li>
-</ul>
-</div>
-<h1 id="install">Installation<a class="headerlink" href="#install" title="Permanent link">&para;</a></h1>
-<p>Select "Apache SIS 1.0 binary" from the <a href="downloads.html">downloads page</a> an unzip in any directory.
-The directory structure will be as below:</p>
-<div class="codehilite"><pre>apache-sis-1.0
+in their own application.
+
+{{< toc >}}
+
+# Installation    {#install}
+
+Select "Apache SIS 1.0 binary" from the [downloads page](downloads.html) an unzip in any directory.
+The directory structure will be as below:
+
+{{< highlight text >}}
+apache-sis-1.0
 ├─ bin
 ├─ conf
 ├─ data
 ├─ lib
 └─ log
-</pre></div>
+{{< / highlight >}}
 
+The `bin` sub-directory contains a `sis` command for Unix systems (Linux or MacOS — we have not yet done a `sis.bat` file for Windows).
+The `bin` sub-directory can be added to the `PATH` environment variable for convenience, but this is not mandatory.
+Example:
 
-<p>The <code>bin</code> sub-directory contains a <code>sis</code> command for Unix systems (Linux or MacOS — we have not yet done a <code>sis.bat</code> file for Windows).
-The <code>bin</code> sub-directory can be added to the <code>PATH</code> environment variable for convenience, but this is not mandatory.
-Example:</p>
-<div class="codehilite"><pre><span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PWD</span>/apache-sis-1.0/bin:<span class="nv">$PATH</span>
-</pre></div>
+{{< highlight bash >}}
+export PATH=$PWD/apache-sis-1.0/bin:$PATH
+{{< / highlight >}}
 
+The remaining of this page assumes that the `bin` directory is on the search path.
+If not, the same examples can still be executed by replacing the `sis` command by `./apache-sis-1.0/bin/sis`.
 
-<p>The remaining of this page assumes that the <code>bin</code> directory is on the search path.
-If not, the same examples can still be executed by replacing the <code>sis</code> command by <code>./apache-sis-1.0/bin/sis</code>.</p>
-<h2 id="dependencies">Optional dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h2>
-<p>Every JAR files present in the <code>lib</code> sub-directory will be included on the classpath during <code>sis</code> command execution.
-By default, the <code>lib</code> directory contains the <code>sis.jar</code> file with only GeoAPI JAXB API dependencies.
-However users can add other JAR files in that directory for the following optional dependencies:</p>
-<ul>
-<li>
-<p><strong>Derby driver —</strong>
-    needed only if Apache SIS can not locate a JavaDB driver in the JDK installation directory.
-    This is not needed on Oracle JDK8 distribution, but needed for all OpenJDK versions and for
-    Oracle JDK more recent than 8.</p>
-</li>
-<li>
-<p><strong>UCAR netCDF library —</strong>
-    by default, SIS uses its own embedded netCDF reader which supports only the classical netCDF format, as standardized by OGC.
-    If there is a need to read files encoded in GRID or HDF formats, then one can copy the UCAR netCDF library in the <code>lib</code> sub-directory.
-    If presents, the UCAR library should be detected and used automatically when SIS can not read a netCDF file by itself.</p>
-</li>
-</ul>
-<h1 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h1>
-<p>Invoking <code>sis</code> without argument shows a summary of available commands and all options.
-For executing a command, the syntax is:</p>
-<div class="codehilite"><pre>sis &lt;<span class="nb">command</span>&gt; <span class="o">[</span>options<span class="o">]</span> <span class="o">[</span>files<span class="o">]</span>
-</pre></div>
+## Optional dependencies    {#dependencies}
 
+Every JAR files present in the `lib` sub-directory will be included on the classpath during `sis` command execution.
+By default, the `lib` directory contains the `sis.jar` file with only GeoAPI JAXB API dependencies.
+However users can add other JAR files in that directory for the following optional dependencies:
 
-<p>Available commands are:</p>
+* **Derby driver —**
+  needed only if Apache SIS can not locate a JavaDB driver in the JDK installation directory.
+  This is not needed on Oracle JDK8 distribution, but needed for all OpenJDK versions and for
+  Oracle JDK more recent than 8.
+
+* **UCAR netCDF library —**
+  by default, SIS uses its own embedded netCDF reader which supports only the classical netCDF format, as standardized by OGC.
+  If there is a need to read files encoded in GRID or HDF formats, then one can copy the UCAR netCDF library in the `lib` sub-directory.
+  If presents, the UCAR library should be detected and used automatically when SIS can not read a netCDF file by itself.
+
+# Usage    {#usage}
+
+Invoking `sis` without argument shows a summary of available commands and all options.
+For executing a command, the syntax is:
+
+{{< highlight bash >}}
+sis <command> [options] [files]
+{{< / highlight >}}
+
+Available commands are:
+
 <table>
   <tr><td><code>help</code></td>       <td>Show a help overview.</td></tr>
   <tr><td><code>about</code></td>      <td>Show information about Apache SIS and system configuration.</td></tr>
@@ -82,9 +73,10 @@ For executing a command, the syntax is:</p>
   <tr><td><code>transform</code></td>  <td>Convert or transform coordinates from given source CRS to target CRS.</td></tr>
 </table>
 
-<p>The set of legal options and the expected number of file arguments depend on the command being executed.
-However all commands support the <code>--help</code> option, which lists the options available for that command.
-Available options will be from the following list:</p>
+The set of legal options and the expected number of file arguments depend on the command being executed.
+However all commands support the `--help` option, which lists the options available for that command.
+Available options will be from the following list:
+
 <table>
   <tr><td><code>--sourceCRS</code></td> <td>The Coordinate Reference System of input data.</td></tr>
   <tr><td><code>--targetCRS</code></td> <td>The Coordinate Reference System of output data.</td></tr>
@@ -99,33 +91,38 @@ Available options will be from the following list:</p>
   <tr><td><code>--help</code></td>      <td>Lists the options available for a specific command.</td></tr>
 </table>
 
-<p>The <code>--locale</code>, <code>--timezone</code> and <code>--encoding</code> options apply to the command output sent to the standard output stream,
+The `--locale`, `--timezone` and `--encoding` options apply to the command output sent to the standard output stream,
 but usually do not apply to the error messages sent to the standard error stream.
-The reason is that command output may be targeted to a client, while the error messages are usually for the operator.</p>
-<h1 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h1>
-<p>The following examples first show how to get a Coordinate Reference System (CRS) from different kinds of definitions.
+The reason is that command output may be targeted to a client, while the error messages are usually for the operator.
+
+# Examples    {#examples}
+
+The following examples first show how to get a Coordinate Reference System (CRS) from different kinds of definitions.
 CRS contain necessary information for locating points on Earth.
 Those information include the geodetic datum, the map projection (if any), the axes and their units of measurement.
-When two such CRS are known (the <em>source</em> and the <em>target</em>), it is possible to convert or transform points between those CRS.
-However the coordinate operation depends not only on the source and target CRS, but also on the <em>area of interest</em> as shown
+When two such CRS are known (the _source_ and the _target_), it is possible to convert or transform points between those CRS.
+However the coordinate operation depends not only on the source and target CRS, but also on the _area of interest_ as shown
 by the example transforming city coordinates in USA and in Canada.
-Then another example show how to get a wider set of metadata, with the CRS as only one specific element of those metadata.</p>
-<h2 id="crs">Print Coordinate Reference Systems (CRS) definition<a class="headerlink" href="#crs" title="Permanent link">&para;</a></h2>
-<p>Apache SIS can read Coordinate Reference System (CRS) definitions from various sources:</p>
-<ul>
-<li>Codes from the EPSG geodetic dataset</li>
-<li>Texts in <em>Well Known Text</em> (WKT) format version 1 and 2</li>
-<li>XML files conform to <em>Geographic Markup Language</em> (GML) schema version 3.2</li>
-</ul>
-<p>The easiest way to see a CRS definition is to use an EPSG code.
-The <a href="http://www.epsg.org/">EPSG geodetic dataset</a> is a widely-used source of definitions for thousands of Coordinate Reference Systems.
-Appache SIS provides a <a href="tables/CoordinateReferenceSystems.html">list of supported codes</a>, which can be queried from the command line.
-For example the following command prints the definition of the <em>"JGD2011 / Japan Plane Rectangular CS VIII"</em> Coordinate Reference System:</p>
-<div class="codehilite"><pre>sis crs EPSG:6676
-</pre></div>
+Then another example show how to get a wider set of metadata, with the CRS as only one specific element of those metadata.
 
+## Print Coordinate Reference Systems (CRS) definition    {#crs}
 
-<p><details>
+Apache SIS can read Coordinate Reference System (CRS) definitions from various sources:
+
+* Codes from the EPSG geodetic dataset
+* Texts in _Well Known Text_ (WKT) format version 1 and 2
+* XML files conform to _Geographic Markup Language_ (GML) schema version 3.2
+
+The easiest way to see a CRS definition is to use an EPSG code.
+The [EPSG geodetic dataset](https://epsg.org/) is a widely-used source of definitions for thousands of Coordinate Reference Systems.
+Appache SIS provides a [list of supported codes](tables/CoordinateReferenceSystems.html), which can be queried from the command line.
+For example the following command prints the definition of the _"JGD2011 / Japan Plane Rectangular CS VIII"_ Coordinate Reference System:
+
+{{< highlight bash >}}
+sis crs EPSG:6676
+{{< / highlight >}}
+
+<details>
   <summary>Expected output (click to expand):</summary>
 <pre>ProjectedCRS["JGD2011 / Japan Plane Rectangular CS VIII",
   BaseGeodCRS["JGD2011",
@@ -148,226 +145,233 @@ For example the following command prints the definition of the <em>"JGD2011 / Ja
   BBox[34.54, 137.32, 38.58, 139.91],
   Id["EPSG", 6676, "9.7", URI["urn:ogc:def:crs:EPSG:9.7:6676"]],
   Remark["Replaces JGD2000 / Japan Plane Rectangular CS VIII (CRS code 2450) with effect from 21st October 2011."]]</pre>
-</details></p>
-<p>The first time that a command requires the EPSG dataset, Apache SIS will propose to download and install a local copy.
+</details>
+
+The first time that a command requires the EPSG dataset, Apache SIS will propose to download and install a local copy.
 This automatic download happen only when using the command-line tools described in this page.
 Developers who wish to use the EPSG dataset in their applications can use the Maven artifact
-documented in <a href="downloads.html#epsg">download</a> page.
+documented in [download](downloads.html#epsg) page.
 If Apache SIS does not propose to download the EPSG geodetic dataset, it may be because no Derby database has been found.
-Try to add the Derby optional dependency <a href="./epsg.html#command-line">as documented here</a>.</p>
-<p>The above output is compatible with version 2 of <em>Well Known Text</em> (WKT) format.
-The output format can be controlled as below:</p>
-<ul>
-<li>
-<p>Some applications are restricted to WKT version 1.
-    For an output using the legacy WKT 1 format, one can add the <code>--format wkt1</code> option to the above command-line.</p>
-</li>
-<li>
-<p>The “WKT 2” specification allows some flexibility in keyword names and in the way to specify units of measurement.
-    By default, the command-line uses this flexibility for producing less verbose but still legal WKT 2 output.
-    If an output closer to WKT 2 recommendations is desired, one can add the <code>--format wkt2</code> option to the above command.
-    The result will be slightly more verbose.</p>
-</li>
-<li>
-<p>Apache SIS can also read and write CRS definitions in the <em>Geographic Markup Language</em> (GML) format.
-    For GML output, one can add the <code>--format xml</code> option to the above command.
-    The result will be much more verbose than WKT outputs.</p>
-</li>
-</ul>
-<p>Java API for accessing functionalities shown in above examples are:</p>
-<ul>
-<li>Convenience static methods in <code>org.apache.sis.referencing</code> package:<ul>
-<li><code>CRS.forCode(String)</code></li>
-<li><code>CRS.fromWKT(String)</code></li>
-<li><code>CRS.fromXML(String)</code></li>
-</ul>
-</li>
-<li>Classes in other packages (less convenient but give more control):<ul>
-<li><code>org.apache.sis.io.wkt.WKTFormat</code> — control WKT version, syntax highlighting, <em>etc.</em></li>
-<li><code>org.apache.sis.xml.MarshallerPool</code> — control GML version, link resolutions,  <em>etc.</em></li>
-</ul>
-</li>
-</ul>
-<h2 id="identifier">Getting a verified EPSG identifier from a Coordinate Reference System<a class="headerlink" href="#identifier" title="Permanent link">&para;</a></h2>
-<p>Because the EPSG geodetic dataset is so commonly used,
+Try to add the Derby optional dependency [as documented here](./epsg.html#command-line).
+
+The above output is compatible with version 2 of _Well Known Text_ (WKT) format.
+The output format can be controlled as below:
+
+* Some applications are restricted to WKT version 1.
+  For an output using the legacy WKT 1 format, one can add the `--format wkt1` option to the above command-line.
+
+* The “WKT 2” specification allows some flexibility in keyword names and in the way to specify units of measurement.
+  By default, the command-line uses this flexibility for producing less verbose but still legal WKT 2 output.
+  If an output closer to WKT 2 recommendations is desired, one can add the `--format wkt2` option to the above command.
+  The result will be slightly more verbose.
+
+* Apache SIS can also read and write CRS definitions in the _Geographic Markup Language_ (GML) format.
+  For GML output, one can add the `--format xml` option to the above command.
+  The result will be much more verbose than WKT outputs.
+
+Java API for accessing functionalities shown in above examples are:
+
+* Convenience static methods in `org.apache.sis.referencing` package:
+  + `CRS.forCode(String)`
+  + `CRS.fromWKT(String)`
+  + `CRS.fromXML(String)`
+* Classes in other packages (less convenient but give more control):
+  + `org.apache.sis.io.wkt.WKTFormat` — control WKT version, syntax highlighting, _etc._
+  + `org.apache.sis.xml.MarshallerPool` — control GML version, link resolutions,  _etc._
+
+## Getting a verified EPSG identifier from a Coordinate Reference System    {#identifier}
+
+Because the EPSG geodetic dataset is so commonly used,
 a very common practice is to specify a CRS using only its EPSG code instead than its full definition.
-Such codes can be written in different ways. For example all the following strings are for the same code:</p>
-<ul>
-<li><code>"EPSG:4326"</code></li>
-<li><code>"urn:ogc:def:crs:EPSG::4326"</code></li>
-<li><code>"http://www​.opengis​.net/def/crs/epsg/0/4326"</code> (not yet supported on the command-line)</li>
-<li><code>"http://www​.opengis​.net/gml/srs/epsg​.xml#4326"</code> (not yet supported on the command-line)</li>
-</ul>
-<p>In a <em>Well Known Text</em> (WKT) string, the code can appear at the bottom of the definition
-in an optional element like <code>ID["EPSG", 4326]</code> or <code>AUTHORITY["EPSG", "4326"]</code>.
+Such codes can be written in different ways. For example all the following strings are for the same code:
+
+* `"EPSG:4326"`
+* `"urn:ogc:def:crs:EPSG::4326"`
+* `"http://www​.opengis​.net/def/crs/epsg/0/4326"` (not yet supported on the command-line)
+* `"http://www​.opengis​.net/gml/srs/epsg​.xml#4326"` (not yet supported on the command-line)
+
+In a _Well Known Text_ (WKT) string, the code can appear at the bottom of the definition
+in an optional element like `ID["EPSG", 4326]` or `AUTHORITY["EPSG", "4326"]`.
 However in many cases the code is missing.
 Sometime Apache SIS can find a missing code by comparing a given CRS against the definitions in the EPSG database.
-The following example reads a WKT for the <em>“NTF (Paris) / Lambert zone II”</em> Coordinate Reference System,
-but in which the <code>ID["EPSG", 27572]</code> element has been intentionally omitted.
-Furthermore, the <em>“NTF (Paris) / Lambert zone II”</em> name has been replaced by <em>“NTF (Paris) / zone to be discovered by the demo”</em> name.
-Executing the following command:</p>
-<div class="codehilite"><pre>sis identifier http://sis.apache.org/examples/crs/MissingIdentifier.wkt
-</pre></div>
+The following example reads a WKT for the _“NTF (Paris) / Lambert zone II”_ Coordinate Reference System,
+but in which the `ID["EPSG", 27572]` element has been intentionally omitted.
+Furthermore, the _“NTF (Paris) / Lambert zone II”_ name has been replaced by _“NTF (Paris) / zone to be discovered by the demo”_ name.
+Executing the following command:
 
+{{< highlight bash >}}
+sis identifier http://sis.apache.org/examples/crs/MissingIdentifier.wkt
+{{< / highlight >}}
 
-<p>produces an output like below:</p>
-<div class="codehilite"><pre>    urn:ogc:def:crs:EPSG:9.7:27572    | NTF (Paris) / Lambert zone II
-</pre></div>
+produces an output like below:
 
+{{< highlight text >}}
+urn:ogc:def:crs:EPSG:9.7:27572    | NTF (Paris) / Lambert zone II
+{{< / highlight >}}
 
-<p>As we can see, Apache SIS has been able to find back the identifier code and the actual CRS name.</p>
-<p>Sometime a WKT declares wrongly an EPSG code.
-The most frequent case is a WKT that defines a Coordinate Reference System with (<em>longitude</em>, <em>latitude</em>) axes,
-but declare an EPSG code for a CRS with (<em>latitude</em>, <em>longitude</em>) axes.
+As we can see, Apache SIS has been able to find back the identifier code and the actual CRS name.
+
+Sometime a WKT declares wrongly an EPSG code.
+The most frequent case is a WKT that defines a Coordinate Reference System with (_longitude_, _latitude_) axes,
+but declare an EPSG code for a CRS with (_latitude_, _longitude_) axes.
 Apache SIS can detect such mismatches.
-For example executing the following command:</p>
-<div class="codehilite"><pre>sis identifier http://sis.apache.org/examples/crs/WrongAxisOrder.wkt
-</pre></div>
+For example executing the following command:
 
+{{< highlight bash >}}
+sis identifier http://sis.apache.org/examples/crs/WrongAxisOrder.wkt
+{{< / highlight >}}
 
-<p>produces an output like below:</p>
-<div class="codehilite"><pre>!   urn:ogc:def:crs:EPSG:8.9:4979    | WGS 84
+produces an output like below:
+
+{{< highlight text >}}
+!   urn:ogc:def:crs:EPSG:8.9:4979    | WGS 84
 
 Legend:
 !   Identified object matches definition provided by authority except for coordinate system axes.
-</pre></div>
+{{< / highlight >}}
 
-
-<p>Apache SIS can perform such analysis because it “understands” the CRS definition.
+Apache SIS can perform such analysis because it “understands” the CRS definition.
 This analysis capability can be tested by altering the CRS definition.
-The next example asks the identifier of a CRS which is normally defined as below:</p>
-<div class="codehilite"><pre>ProjectedCRS[&quot;WGS 84 / Mercator 41&quot;,
+The next example asks the identifier of a CRS which is normally defined as below:
+
+{{< highlight text >}}
+ProjectedCRS["WGS 84 / Mercator 41",
   (... definition omitted for brevity ...)
-    Method[&quot;Mercator (variant B)&quot;],
-    Parameter[&quot;Latitude of 1st standard parallel&quot;, -41.0],
+    Method["Mercator (variant B)"],
+    Parameter["Latitude of 1st standard parallel", -41.0],
   (... definition omitted for brevity ...)
-</pre></div>
+{{< / highlight >}}
 
+However in this example, we will provide a CRS defined as below:
 
-<p>However in this example, we will provide a CRS defined as below:</p>
-<div class="codehilite"><pre>ProjectedCRS[&quot;Scaled Mercator&quot;,
+{{< highlight text >}}
+ProjectedCRS["Scaled Mercator",
   (... definition omitted for brevity ...)
-    Method[&quot;Mercator (variant A)&quot;],
-    Parameter[&quot;Scale factor at natural origin&quot;, 0.7557992272019596&quot;],
-    Parameter[&quot;Latitude of natural origin&quot;, -0.0],
+    Method["Mercator (variant A)"],
+    Parameter["Scale factor at natural origin", 0.7557992272019596"],
+    Parameter["Latitude of natural origin", -0.0],
   (... definition omitted for brevity ...)
-</pre></div>
+{{< / highlight >}}
 
+Executing the following command:
 
-<p>Executing the following command:</p>
-<div class="codehilite"><pre>sis identifier http://sis.apache.org/examples/crs/EquivalentDefinition.wkt
-</pre></div>
+{{< highlight bash >}}
+sis identifier http://sis.apache.org/examples/crs/EquivalentDefinition.wkt
+{{< / highlight >}}
 
+produces an output like below:
 
-<p>produces an output like below:</p>
-<div class="codehilite"><pre>urn:ogc:def:crs:EPSG:9.7:3994    | WGS 84 / Mercator 41
-</pre></div>
+{{< highlight text >}}
+urn:ogc:def:crs:EPSG:9.7:3994    | WGS 84 / Mercator 41
+{{< / highlight >}}
 
+In above example, Apache SIS used the fact that a
+_“Mercator (variant A)”_ projection with a _“Scale factor at natural origin”_ parameter value of 0.755799… on the WGS84 datum is numerically equivalent to a
+_“Mercator (variant B)”_ projection with a _“Latitude of 1st standard parallel”_ parameter value of 41° on the same datum.
+This recognition allowed SIS to return the EPSG:3994 code even if it stands for a CRS defined as a _“Mercator (variant B)”_ projection rather than variant A.
 
-<p>In above example, Apache SIS used the fact that a
-<em>“Mercator (variant A)”</em> projection with a <em>“Scale factor at natural origin”</em> parameter value of 0.755799… on the WGS84 datum is numerically equivalent to a
-<em>“Mercator (variant B)”</em> projection with a <em>“Latitude of 1st standard parallel”</em> parameter value of 41° on the same datum.
-This recognition allowed SIS to return the EPSG:3994 code even if it stands for a CRS defined as a <em>“Mercator (variant B)”</em> projection rather than variant A.</p>
-<p>Java API for accessing functionalities shown in above example are:</p>
-<ul>
-<li>Convenience static method in <code>org.apache.sis.referencing</code> package:<ul>
-<li><code>IdentifiedObjects.lookupURN(IdentifiedObject, Citation)</code></li>
-</ul>
-</li>
-<li>Class in other package (less convenient but give more control):<ul>
-<li><code>org.apache.sis.referencing.factory.IdentifiedObjectFinder</code></li>
-</ul>
-</li>
-</ul>
-<h2 id="coordinateOperation">Performing coordinate conversions or transformations<a class="headerlink" href="#coordinateOperation" title="Permanent link">&para;</a></h2>
-<p>Coordinates represented in a given CRS can be transformed into coordinates represented in another CRS.
-The coordinate transformations depend mostly on the <em>source</em> and <em>target</em> CRS, but the <em>area of interest</em>
-can also have an influence; while optional, that area should be specified when it is known.</p>
-<p>The following example transform coordinates from the North American Datum 1927 (EPSG:4267) to WGS84 (EPSG:4326).
+Java API for accessing functionalities shown in above example are:
+
+* Convenience static method in `org.apache.sis.referencing` package:
+  + `IdentifiedObjects.lookupURN(IdentifiedObject, Citation)`
+* Class in other package (less convenient but give more control):
+  + `org.apache.sis.referencing.factory.IdentifiedObjectFinder`
+
+## Performing coordinate conversions or transformations    {#coordinateOperation}
+
+Coordinates represented in a given CRS can be transformed into coordinates represented in another CRS.
+The coordinate transformations depend mostly on the _source_ and _target_ CRS, but the _area of interest_
+can also have an influence; while optional, that area should be specified when it is known.
+
+The following example transform coordinates from the North American Datum 1927 (EPSG:4267) to WGS84 (EPSG:4326).
 The example is run twice: once for cities in USA, then once for cities in Canada:
-(Note: the application may log warnings to the console. Those warnings can be ignored)</p>
-<div class="codehilite"><pre>wget http://sis.apache.org/examples/coordinates/AmericanCities.csv
+(Note: the application may log warnings to the console. Those warnings can be ignored)
+
+{{< highlight bash >}}
+wget http://sis.apache.org/examples/coordinates/AmericanCities.csv
 wget http://sis.apache.org/examples/coordinates/CanadianCities.csv
 sis transform --sourceCRS EPSG:4267 --targetCRS EPSG:4326 AmericanCities.csv
 sis transform --sourceCRS EPSG:4267 --targetCRS EPSG:4326 CanadianCities.csv
-</pre></div>
+{{< / highlight >}}
 
+The first execution should print the following header, followed by transformed coordinate values.
+Note the operation code (EPSG:1173), domain of validity (United State) and accuracy.
 
-<p>The first execution should print the following header, followed by transformed coordinate values.
-Note the operation code (EPSG:1173), domain of validity (United State) and accuracy.</p>
-<div class="codehilite"><pre># Source:      NAD27 (EPSG:4267)
+{{< highlight text >}}
+# Source:      NAD27 (EPSG:4267)
 # Destination: WGS 84 (EPSG:4326)
 # Operations:  NAD27 to WGS 84 (4) (EPSG:1173)
 # Domain:      United States (USA) - onshore
 # Accuracy:    10.0 metres
-</pre></div>
+{{< / highlight >}}
 
-
-<p>The second execution should print the following header, followed by transformed coordinate values.
+The second execution should print the following header, followed by transformed coordinate values.
 Note that the operation code (EPSG:1172), domain of validity (Canada) and accuracy are not the same
-than in previous example.</p>
-<div class="codehilite"><pre># Source:      NAD27 (EPSG:4267)
+than in previous example.
+
+{{< highlight text >}}
+# Source:      NAD27 (EPSG:4267)
 # Destination: WGS 84 (EPSG:4326)
 # Operations:  NAD27 to WGS 84 (3) (EPSG:1172)
 # Domain:      Canada - onshore and offshore
 # Accuracy:    20.0 metres
-</pre></div>
+{{< / highlight >}}
 
-
-<p>The difference between those two operations become more visible by adding the <code>--verbose</code> option
-to the above <code>sis transform</code> commands.
+The difference between those two operations become more visible by adding the `--verbose` option
+to the above `sis transform` commands.
 This option shows the coordinate operation in Well Known Text (WKT) or pseudo-WKT format.
-When transforming coordinates in USA, the operation contains the following parameter values:</p>
-<div class="codehilite"><pre>Method[&quot;Geocentric translations (geog2D domain)&quot;],
-  Parameter[&quot;X-axis translation&quot;, -8.0, Unit[&quot;metre&quot;, 1]],
-  Parameter[&quot;Y-axis translation&quot;, 160.0, Unit[&quot;metre&quot;, 1]],
-  Parameter[&quot;Z-axis translation&quot;, 176.0, Unit[&quot;metre&quot;, 1]]
-</pre></div>
+When transforming coordinates in USA, the operation contains the following parameter values:
 
+{{< highlight text >}}
+Method["Geocentric translations (geog2D domain)"],
+  Parameter["X-axis translation", -8.0, Unit["metre", 1]],
+  Parameter["Y-axis translation", 160.0, Unit["metre", 1]],
+  Parameter["Z-axis translation", 176.0, Unit["metre", 1]]
+{{< / highlight >}}
 
-<p>But when transforming coordinates in Canada, the operation rather contains the following parameter values:</p>
-<div class="codehilite"><pre>Method[&quot;Geocentric translations (geog2D domain)&quot;],
-  Parameter[&quot;X-axis translation&quot;, -10.0, Unit[&quot;metre&quot;, 1]],
-  Parameter[&quot;Y-axis translation&quot;, 158.0, Unit[&quot;metre&quot;, 1]],
-  Parameter[&quot;Z-axis translation&quot;, 187.0, Unit[&quot;metre&quot;, 1]],
-</pre></div>
+But when transforming coordinates in Canada, the operation rather contains the following parameter values:
 
+{{< highlight text >}}
+Method["Geocentric translations (geog2D domain)"],
+  Parameter["X-axis translation", -10.0, Unit["metre", 1]],
+  Parameter["Y-axis translation", 158.0, Unit["metre", 1]],
+  Parameter["Z-axis translation", 187.0, Unit["metre", 1]],
+{{< / highlight >}}
 
-<p>As seen in the above examples, the parameter values differ slightly with the geographic area of the coordinates to transform.
-Those parameters could also be different if <em>datum shift grids</em> are available. For example in USA:</p>
-<div class="codehilite"><pre>Method[&quot;NADCON&quot;],
-  Parameter[&quot;Latitude difference file&quot;, &quot;conus.las&quot;],
-  Parameter[&quot;Longitude difference file&quot;, &quot;conus.los&quot;],
-</pre></div>
+As seen in the above examples, the parameter values differ slightly with the geographic area of the coordinates to transform.
+Those parameters could also be different if _datum shift grids_ are available. For example in USA:
 
+{{< highlight text >}}
+    Method["NADCON"],
+      Parameter["Latitude difference file", "conus.las"],
+      Parameter["Longitude difference file", "conus.los"],\
+{{< / highlight >}}
 
-<p>Java API for accessing functionalities shown in above examples are:</p>
-<ul>
-<li>Convenience static method in <code>org.apache.sis.referencing</code> package:<ul>
-<li><code>CRS.findOperation(CoordinateReferenceSystem, CoordinateReferenceSystem, GeographicBoundingBox)</code></li>
-</ul>
-</li>
-<li>Class in other package (less convenient but give more control):<ul>
-<li><code>org.apache.sis.referencing.operation.DefaultCoordinateOperationFactory</code></li>
-</ul>
-</li>
-</ul>
-<h2 id="metadata">Extracting ISO 19115 Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h2>
-<p>SIS can read the header of a data file and print the metadata in an ISO 19115 structure.
+Java API for accessing functionalities shown in above examples are:
+
+* Convenience static method in `org.apache.sis.referencing` package:
+  + `CRS.findOperation(CoordinateReferenceSystem, CoordinateReferenceSystem, GeographicBoundingBox)`
+* Class in other package (less convenient but give more control):
+  + `org.apache.sis.referencing.operation.DefaultCoordinateOperationFactory`
+
+## Extracting ISO 19115 Metadata    {#metadata}
+
+SIS can read the header of a data file and print the metadata in an ISO 19115 structure.
 The data file given in argument can be a local file or a URL.
 By default, the metadata are shown in a relatively compact tree-table format.
-But the metadata can optionally be exported as an ISO 19139 compliant XML document.</p>
+But the metadata can optionally be exported as an ISO 19139 compliant XML document.
+
 <blockquote><b>Note:</b>
 As of SIS 1.0, only ISO 19139 XML documents, CF-compliant netCDF files, GeoTIFF files, GPX files
 or Moving Features CSV files can be given in argument to this command.
 </blockquote>
 
-<p>The following example show the metadata of a netCDF file accessible from the web:</p>
-<div class="codehilite"><pre>sis metadata https://github.com/opengeospatial/geoapi/raw/master/geoapi-conformance/src/main/resources/org/opengis/test/dataset/Cube4D_projected_float.nc
-</pre></div>
+The following example show the metadata of a netCDF file accessible from the web:
 
-
-<p><details>
+{{< highlight bash >}}
+    sis metadata https://github.com/opengeospatial/geoapi/raw/master/geoapi-conformance/src/main/resources/org/opengis/test/dataset/Cube4D_projected_float.nc
+{{< / highlight >}}
+<details>
   <summary>Below is an extract of the above command output:</summary>
 <pre>Metadata
   ├─Identification info
@@ -398,23 +402,22 @@ or Moving Features CSV files can be given in argument to this command.
       └─Dimension
           ├─Descriptor………………………………………………………………… Sea temperature
           └─Sequence identifier………………………………………… SST</pre>
-</details></p>
-<p>Adding the <code>--format xml</code> option to the above command will format the same metadata in a XML document.
-The output is not shown in this page because of its verbosity.</p>
-<p>Java API for accessing functionalities shown in above examples are:</p>
-<ul>
-<li>Convenience static methods in <code>org.apache.sis.xml</code> package:<ul>
-<li><code>XML.marshal(…)</code></li>
-<li><code>XML.unmarshal(…)</code></li>
-</ul>
-</li>
-<li>Class in other package (less convenient but give more control):<ul>
-<li><code>org.apache.sis.xml.MarshallerPool</code></li>
-</ul>
-</li>
-</ul>
-<h1 id="performance">Performance consideration<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h1>
-<p>If there is a large amount of files to process, invoking the above command many time may be inefficient
+</details>
+
+Adding the `--format xml` option to the above command will format the same metadata in a XML document.
+The output is not shown in this page because of its verbosity.
+
+Java API for accessing functionalities shown in above examples are:
+
+* Convenience static methods in `org.apache.sis.xml` package:
+  + `XML.marshal(…)`
+  + `XML.unmarshal(…)`
+* Class in other package (less convenient but give more control):
+  + `org.apache.sis.xml.MarshallerPool`
+
+# Performance consideration    {#performance}
+
+If there is a large amount of files to process, invoking the above command many time may be inefficient
 since it would restart a new JVM on every invocation.
 If the operation requires the EPSG dataset, booting the Derby database also has a significant cost.
-For such cases, it is more efficient to loop inside a small Java program using the <a href="apidocs/index.html">SIS API</a>.</p>
+For such cases, it is more efficient to loop inside a small Java program using the [SIS API](apidocs/index.html).
