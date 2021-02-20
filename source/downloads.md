@@ -2,114 +2,134 @@
 title: Apache SIS downloads
 ---
 
-<p>Apache SIS 1.0 is now available.
-See the <a href="release-notes/1.0.html">release notes</a> for a list of changes since the previous version.</p>
-<p>Apache SIS releases are available under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.
-See the <code>NOTICE</code> file contained in each release artifact for applicable copyright attribution notices.</p>
-<div class="toc">
-<ul>
-<li><a href="#bundles">Download ZIP files</a><ul>
-<li><a href="#release-gpg">Verify signatures</a></li>
-</ul>
-</li>
-<li><a href="#maven">Download as a Maven dependency</a><ul>
-<li><a href="#non-free">Include non-free resources</a></li>
-</ul>
-</li>
-</ul>
-</div>
-<h1 id="bundles">Download ZIP files<a class="headerlink" href="#bundles" title="Permanent link">&para;</a></h1>
-<p>Apache SIS is distributed in the form of Java source code in a multi-modules Apache Maven project.
+Apache SIS 1.0 is now available.
+See the [release notes](release-notes/1.0.html) for a list of changes since the previous version.
+
+Apache SIS releases are available under the [Apache License, Version 2.0][license].
+See the `NOTICE` file contained in each release artifact for applicable copyright attribution notices.
+
+{{< toc >}}
+
+# Download ZIP files    {#bundles}
+
+Apache SIS is distributed in the form of Java source code in a multi-modules Apache Maven project.
 For convenience, an aggregated Javadoc and a pre-compiled JAR file are available as separated downloads.
 The precompiled JAR file contains most modules and dependencies in a single archive for easier inclusion
-in a classpath.</p>
-<ul>
-<li><a href="http://www.apache.org/dyn/closer.cgi/sis/1.0/apache-sis-1.0-src.zip">Apache SIS 1.0 sources</a> [<a href="https://www.apache.org/dist/sis/1.0/apache-sis-1.0-src.zip.asc">PGP</a>] [<a href="https://www.apache.org/dist/sis/1.0/apache-sis-1.0-src.zip.md5">MD5</a>] [<a href="https://www.apache.org/dist/sis/1.0/apache-sis-1.0-src.zip.sha">SHA</a>]</li>
-<li><a href="http://www.apache.org/dyn/closer.cgi/sis/1.0/apache-sis-1.0-doc.zip">Apache SIS 1.0 javadoc</a> [<a href="https://www.apache.org/dist/sis/1.0/apache-sis-1.0-doc.zip.asc">PGP</a>] [<a href="https://www.apache.org/dist/sis/1.0/apache-sis-1.0-doc.zip.md5">MD5</a>] [<a href="https://www.apache.org/dist/sis/1.0/apache-sis-1.0-doc.zip.sha">SHA</a>]</li>
-<li><a href="http://www.apache.org/dyn/closer.cgi/sis/1.0/apache-sis-1.0-bin.zip">Apache SIS 1.0 binary</a>  [<a href="https://www.apache.org/dist/sis/1.0/apache-sis-1.0-bin.zip.asc">PGP</a>] [<a href="https://www.apache.org/dist/sis/1.0/apache-sis-1.0-bin.zip.md5">MD5</a>] [<a href="https://www.apache.org/dist/sis/1.0/apache-sis-1.0-bin.zip.sha">SHA</a>]</li>
-</ul>
-<h2 id="release-gpg">Verify signatures<a class="headerlink" href="#release-gpg" title="Permanent link">&para;</a></h2>
-<p>All downloads can be verified using the Apache SIS code signing <a href="https://www.apache.org/dist/sis/KEYS">KEYS</a>.
-The PGP (<em>Pretty Good Privacy</em>) signatures can be verified using any OpenPGP implementation, for example GPG (<em>GNU Privacy Guard</em>).
-First download the <a href="https://www.apache.org/dist/sis/KEYS">KEYS</a> file and the <code>.asc</code> signature files for the relevant release packages.
+in a classpath.
+
+* [Apache SIS 1.0 sources][src] \[[PGP][src-PGP]\] \[[MD5][src-MD5]\] \[[SHA][src-SHA]\]
+* [Apache SIS 1.0 javadoc][doc] \[[PGP][doc-PGP]\] \[[MD5][doc-MD5]\] \[[SHA][doc-SHA]\]
+* [Apache SIS 1.0 binary][bin]  \[[PGP][bin-PGP]\] \[[MD5][bin-MD5]\] \[[SHA][bin-SHA]\]
+
+## Verify signatures    {#release-gpg}
+
+All downloads can be verified using the Apache SIS code signing [KEYS][keys].
+The PGP (_Pretty Good Privacy_) signatures can be verified using any OpenPGP implementation, for example GPG (_GNU Privacy Guard_).
+First download the [KEYS][keys] file and the `.asc` signature files for the relevant release packages.
 Make sure you get these files from the main distribution directory, rather than from a mirror.
-Then verify the signatures using the following:</p>
-<p>Using GNU Privacy Guard:</p>
-<div class="codehilite"><pre>gpg --import KEYS
+Then verify the signatures using the following:
+
+Using GNU Privacy Guard:
+
+{{< highlight bash >}}
+gpg --import KEYS
 gpg --verify apache-sis-X.Y.Z.zip.asc
-</pre></div>
+{{< / highlight >}}
 
+Using PGP version 6:
 
-<p>Using PGP version 6:</p>
-<div class="codehilite"><pre>pgp -ka KEYS
+{{< highlight bash >}}
+pgp -ka KEYS
 pgp apache-sis-X.Y.Z.zip.asc
-</pre></div>
+{{< / highlight >}}
 
+Using PGP version 5:
 
-<p>Using PGP version 5:</p>
-<div class="codehilite"><pre>pgpk -a KEYS
+{{< highlight bash >}}
+pgpk -a KEYS
 pgpv apache-sis-X.Y.Z.zip.asc
-</pre></div>
+{{< / highlight >}}
 
+# Download as a Maven dependency    {#maven}
 
-<h1 id="maven">Download as a Maven dependency<a class="headerlink" href="#maven" title="Permanent link">&para;</a></h1>
-<p>An easy approach to integrate Apache SIS into a Java project uses the <a href="http://maven.apache.org/">Apache Maven</a>
+An easy approach to integrate Apache SIS into a Java project uses the [Apache Maven][maven]
 dependency management tool to automatically obtain the required Java Archives (JAR) files from the network.
-Below are examples of declarations in a <code>pom.xml</code> file for building a project with a SIS core module.
-If running on Java 11 or higher, at least one of the two next dependencies is also required:</p>
-<div class="codehilite"><pre><span class="nt">&lt;properties&gt;</span>
-  <span class="nt">&lt;sis.version&gt;</span>1.0<span class="nt">&lt;/sis.version&gt;</span>
-<span class="nt">&lt;/properties&gt;</span>
+Below are examples of declarations in a `pom.xml` file for building a project with a SIS core module.
+If running on Java 11 or higher, at least one of the two next dependencies is also required:
 
-<span class="nt">&lt;dependencies&gt;</span>
-<span class="nt">&lt;dependency&gt;</span>
-<span class="nt">&lt;groupId&gt;</span>org.apache.sis.core<span class="nt">&lt;/groupId&gt;</span>
-<span class="nt">&lt;artifactId&gt;</span>sis-referencing<span class="nt">&lt;/artifactId&gt;</span>
-<span class="nt">&lt;version&gt;</span>${sis.version}<span class="nt">&lt;/version&gt;</span>
-<span class="nt">&lt;/dependency&gt;</span>
-<span class="nt">&lt;/dependencies&gt;</span>
+{{< highlight xml >}}
+<properties>
+  <sis.version>1.0</sis.version>
+</properties>
 
-<span class="c">&lt;!-- The following dependency can be omitted on Java 8 (unconditionally), or</span>
-<span class="c">     on Java 9 and 10 if the &quot;--add-modules java.xml.bind&quot; option is used. --&gt;</span>
-<span class="nt">&lt;dependency&gt;</span>
-<span class="nt">&lt;groupId&gt;</span>org.glassfish.jaxb<span class="nt">&lt;/groupId&gt;</span>
-<span class="nt">&lt;artifactId&gt;</span>jaxb-runtime<span class="nt">&lt;/artifactId&gt;</span>
-<span class="nt">&lt;version&gt;</span>2.3.2<span class="nt">&lt;/version&gt;</span>
-<span class="nt">&lt;scope&gt;</span>runtime<span class="nt">&lt;/scope&gt;</span>
-<span class="nt">&lt;/dependency&gt;</span>
+<dependencies>
+  <dependency>
+    <groupId>org.apache.sis.core</groupId>
+    <artifactId>sis-referencing</artifactId>
+    <version>${sis.version}</version>
+  </dependency>
+</dependencies>
 
-<span class="c">&lt;!-- Above JAXB dependency can be replaced by the following dependency</span>
-<span class="c">     if no XML (un)marshalling is wanted. This dependency is lighter. --&gt;</span>
-<span class="nt">&lt;dependency&gt;</span>
-<span class="nt">&lt;groupId&gt;</span>jakarta.xml.bind<span class="nt">&lt;/groupId&gt;</span>
-<span class="nt">&lt;artifactId&gt;</span>jakarta.xml.bind-api<span class="nt">&lt;/artifactId&gt;</span>
-<span class="nt">&lt;version&gt;</span>2.3.2<span class="nt">&lt;/version&gt;</span>
-<span class="nt">&lt;scope&gt;</span>runtime<span class="nt">&lt;/scope&gt;</span>
-<span class="nt">&lt;/dependency&gt;</span>
-</pre></div>
+<!-- The following dependency can be omitted on Java 8 (unconditionally), or
+     on Java 9 and 10 if the "--add-modules java.xml.bind" option is used. -->
+<dependency>
+  <groupId>org.glassfish.jaxb</groupId>
+  <artifactId>jaxb-runtime</artifactId>
+  <version>2.3.2</version>
+  <scope>runtime</scope>
+</dependency>
 
+<!-- Above JAXB dependency can be replaced by the following dependency
+     if no XML (un)marshalling is wanted. This dependency is lighter. -->
+<dependency>
+  <groupId>jakarta.xml.bind</groupId>
+  <artifactId>jakarta.xml.bind-api</artifactId>
+  <version>2.3.2</version>
+  <scope>runtime</scope>
+</dependency>
+{{< / highlight >}}
 
-<h2 id="non-free">Include non-free resources<a class="headerlink" href="#non-free" title="Permanent link">&para;</a></h2>
-<p>The <a href="http://www.epsg.org/">EPSG geodetic dataset</a> is optional but strongly recommended.
+## Include non-free resources    {#non-free}
+
+The [EPSG geodetic dataset][EPSG] is optional but strongly recommended.
 The EPSG dataset is a de-facto standard providing
-<a href="tables/CoordinateReferenceSystems.html">thousands of Coordinate Reference System (CRS) definitions</a>
+[thousands of Coordinate Reference System (CRS) definitions](tables/CoordinateReferenceSystems.html)
 together with information about how to perform coordinate operations, their accuracies and their domains of validity.
-However usage of EPSG dataset requires acceptation of <a href="https://epsg.org/terms-of-use.html">EPSG terms of use</a>.
-If you accept those terms of use, then the following dependency can be added:</p>
-<div class="codehilite"><pre><span class="nt">&lt;dependencies&gt;</span>
-  <span class="nt">&lt;dependency&gt;</span>
-    <span class="nt">&lt;groupId&gt;</span>org.apache.sis.non-free<span class="nt">&lt;/groupId&gt;</span>
-    <span class="nt">&lt;artifactId&gt;</span>sis-embedded-data<span class="nt">&lt;/artifactId&gt;</span>
-    <span class="nt">&lt;version&gt;</span>${sis.version}<span class="nt">&lt;/version&gt;</span>
-    <span class="nt">&lt;scope&gt;</span>runtime<span class="nt">&lt;/scope&gt;</span>
-  <span class="nt">&lt;/dependency&gt;</span>
-<span class="nt">&lt;/dependencies&gt;</span>
-</pre></div>
+However usage of EPSG dataset requires acceptation of [EPSG terms of use][EPSG-ToU].
+If you accept those terms of use, then the following dependency can be added:
 
+{{< highlight xml >}}
+<dependencies>
+  <dependency>
+    <groupId>org.apache.sis.non-free</groupId>
+    <artifactId>sis-embedded-data</artifactId>
+    <version>${sis.version}</version>
+    <scope>runtime</scope>
+  </dependency>
+</dependencies>
+{{< / highlight >}}
 
-<p>Above dependency uses a read-only embedded Derby database.
-Note that the need to uncompress the <code>sis-embedded-data.jar</code> file
-slows down <code>CRS​.forCode(…)</code> and <code>CRS​.findCoordinateOperation(…)</code> method executions.
+Above dependency uses a read-only embedded Derby database.
+Note that the need to uncompress the `sis-embedded-data.jar` file
+slows down `CRS​.forCode(…)` and `CRS​.findCoordinateOperation(…)` method executions.
 For better flexibility and performance, it is also possible to use an uncompressed
 and writable Derby database, or to install the EPSG dataset on HSQL or PostgreSQL.
-See <a href="epsg.html">How to use EPSG geodetic dataset</a> page for more information.</p>
+See [How to use EPSG geodetic dataset](epsg.html) page for more information.
+
+[maven]:    http://maven.apache.org/
+[keys]:     https://www.apache.org/dist/sis/KEYS
+[license]:  http://www.apache.org/licenses/LICENSE-2.0
+[src]:      http://www.apache.org/dyn/closer.cgi/sis/1.0/apache-sis-1.0-src.zip
+[doc]:      http://www.apache.org/dyn/closer.cgi/sis/1.0/apache-sis-1.0-doc.zip
+[bin]:      http://www.apache.org/dyn/closer.cgi/sis/1.0/apache-sis-1.0-bin.zip
+[src-PGP]:  https://www.apache.org/dist/sis/1.0/apache-sis-1.0-src.zip.asc
+[doc-PGP]:  https://www.apache.org/dist/sis/1.0/apache-sis-1.0-doc.zip.asc
+[bin-PGP]:  https://www.apache.org/dist/sis/1.0/apache-sis-1.0-bin.zip.asc
+[src-MD5]:  https://www.apache.org/dist/sis/1.0/apache-sis-1.0-src.zip.md5
+[doc-MD5]:  https://www.apache.org/dist/sis/1.0/apache-sis-1.0-doc.zip.md5
+[bin-MD5]:  https://www.apache.org/dist/sis/1.0/apache-sis-1.0-bin.zip.md5
+[src-SHA]:  https://www.apache.org/dist/sis/1.0/apache-sis-1.0-src.zip.sha
+[doc-SHA]:  https://www.apache.org/dist/sis/1.0/apache-sis-1.0-doc.zip.sha
+[bin-SHA]:  https://www.apache.org/dist/sis/1.0/apache-sis-1.0-bin.zip.sha
+[EPSG]:     https://epsg.org/
+[EPSG-ToU]: https://epsg.org/terms-of-use.html

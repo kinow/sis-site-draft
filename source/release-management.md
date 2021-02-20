@@ -2,614 +2,637 @@
 title: Release management
 ---
 
-<p>This page describes how to create and deploy the SIS Maven artifacts, binary bundle, javadoc and list of API changes.
-The <a href="http://www.apache.org/dev/release.html">Release FAQ</a> page describes the foundation wide policies.
-Instructions on this page describe the steps specific to SIS (we do not use the <code>mvn release</code> command).
-The intended audiences are SIS release managers.</p>
-<div class="toc">
-<ul>
-<li><a href="#configure">Configure</a><ul>
-<li><a href="#directory-layout">Directory layout</a></li>
-</ul>
-</li>
-<li><a href="#prepare-source">Review project status before branching</a><ul>
-<li><a href="#update-crs-list">Update the list of supported CRS</a></li>
-<li><a href="#release-notes">Prepare release notes</a></li>
-</ul>
-</li>
-<li><a href="#branch">Create release branch</a><ul>
-<li><a href="#test-branch">Test branch extensively</a></li>
-<li><a href="#maven-nonfree">Prepare non-free resources</a></li>
-<li><a href="#integration-tests">Integration test</a></li>
-</ul>
-</li>
-<li><a href="#maven-deploy">Deploy Maven artifacts</a><ul>
-<li><a href="#nexus-close">Verify and close the Nexus release artifacts</a></li>
-<li><a href="#nexus-text">Test the Nexus release artifacts</a></li>
-</ul>
-</li>
-<li><a href="#stage">Stage the source, binary and javadoc artifacts</a><ul>
-<li><a href="#dist">Initialize the distribution directory</a></li>
-<li><a href="#sign">Sign and commit</a></li>
-<li><a href="#apidocs">Update online Javadoc</a></li>
-<li><a href="#test">Test the release</a></li>
-</ul>
-</li>
-<li><a href="#openoffice">Prepare OpenOffice add-in</a></li>
-<li><a href="#prepare-website">Prepare Web site</a></li>
-<li><a href="#vote">Put the release candidate up for a vote</a><ul>
-<li><a href="#veto">Recovering from a vetoed release</a></li>
-</ul>
-</li>
-<li><a href="#finalize">Finalize the release</a><ul>
-<li><a href="#verify">Verify release signatures</a></li>
-<li><a href="#announce">Announce the release</a></li>
-</ul>
-</li>
-<li><a href="#next-release">Update master for the next development cycle</a><ul>
-<li><a href="#nexus-clean">Delete old artifacts on Maven snapshot repository</a></li>
-</ul>
-</li>
-</ul>
-</div>
-<h1 id="configure">Configure<a class="headerlink" href="#configure" title="Permanent link">&para;</a></h1>
-<p>Before to perform a release, make sure that the following conditions hold:</p>
-<ul>
-<li>Commands will be executed in a Unix shell.</li>
-<li>Git, Subversion, GNU GPG, ZIP, Maven, Ant, Java and the Java compiler are available on the path.</li>
-<li>The <a href="release-management-setup.html">release management setup</a> steps have been executed once.</li>
-</ul>
-<p>For all instructions in this page, <code>$OLD_VERSION</code> and <code>$NEW_VERSION</code> stand for the version
-number of the previous and the new release respectively, and <code>$RELEASE_CANDIDATE</code> stands for
-the current release attempt. Those versions shall be set on the command line like below (Unix):</p>
-<div class="codehilite"><pre>gpg --list-keys                     <span class="c"># For getting the value to put in &lt;your key ID&gt;</span>
-<span class="nb">unset </span>PATH_TO_FX
-<span class="nb">export </span><span class="nv">OLD_VERSION</span><span class="o">=</span>0.8
-<span class="nb">export </span><span class="nv">NEW_VERSION</span><span class="o">=</span>1.0
-<span class="nb">export </span><span class="nv">RELEASE_CANDIDATE</span><span class="o">=</span>1
-<span class="nb">export </span><span class="nv">SIGNING_KEY</span><span class="o">=</span>&lt;your key ID&gt;    <span class="c"># hexadecimal number with 8 or 40 digits.</span>
-</pre></div>
+This page describes how to create and deploy the SIS Maven artifacts, binary bundle, javadoc and list of API changes.
+The [Release FAQ][release-faq] page describes the foundation wide policies.
+Instructions on this page describe the steps specific to SIS (we do not use the `mvn release` command).
+The intended audiences are SIS release managers.
 
+{{< toc >}}
 
-<h2 id="directory-layout">Directory layout<a class="headerlink" href="#directory-layout" title="Permanent link">&para;</a></h2>
-<p>The steps described in this page assume the following directory layout (some directories will be created as
+# Configure    {#configure}
+
+Before to perform a release, make sure that the following conditions hold:
+
+* Commands will be executed in a Unix shell.
+* Git, Subversion, GNU GPG, ZIP, Maven, Ant, Java and the Java compiler are available on the path.
+* The [release management setup](release-management-setup.html) steps have been executed once.
+
+For all instructions in this page, `$OLD_VERSION` and `$NEW_VERSION` stand for the version
+number of the previous and the new release respectively, and `$RELEASE_CANDIDATE` stands for
+the current release attempt. Those versions shall be set on the command line like below (Unix):
+
+{{< highlight bash >}}
+gpg --list-keys                     # For getting the value to put in <your key ID>
+unset PATH_TO_FX
+export OLD_VERSION=0.8
+export NEW_VERSION=1.0
+export RELEASE_CANDIDATE=1
+export SIGNING_KEY=<your key ID>    # hexadecimal number with 8 or 40 digits.
+{{< / highlight >}}
+
+## Directory layout    {#directory-layout}
+
+The steps described in this page assume the following directory layout (some directories will be created as
 a result of the steps). Any other layout can be used. However if the layout differs, then the relative paths
-in this page shall be adjusted accordingly.</p>
-<div class="codehilite"><pre>&lt;any root directory for SIS&gt;
-├─ $NEW_VERSION-RC
-├─ master
-├─ non-free
-│  └─ sis-epsg
-├─ releases
-│  ├─ distribution
-│  │  └─ $NEW_VERSION
-│  │     └─ RC$RELEASE_CANDIDATE
-│  └─ integration-test
-│     └─ maven
-└─ site
-   └─ content
-      └─ apidocs
-</pre></div>
+in this page shall be adjusted accordingly.
 
+{{< highlight text >}}
+    <any root directory for SIS>
+    ├─ $NEW_VERSION-RC
+    ├─ master
+    ├─ non-free
+    │  └─ sis-epsg
+    ├─ releases
+    │  ├─ distribution
+    │  │  └─ $NEW_VERSION
+    │  │     └─ RC$RELEASE_CANDIDATE
+    │  └─ integration-test
+    │     └─ maven
+    └─ site
+       └─ content
+          └─ apidocs
+{{< / highlight >}}
 
-<h1 id="prepare-source">Review project status before branching<a class="headerlink" href="#prepare-source" title="Permanent link">&para;</a></h1>
-<p>Replace the <code>$OLD_VERSION</code> number by <code>$NEW_VERSION</code> in the values of following properties on the development branch:</p>
-<ul>
-<li><code>DOWNLOAD_URL</code> in <code>application/sis-console/src/main/java/org/apache/sis/console/ResourcesDownloader.java</code> file.</li>
-<li><code>&lt;sis.non-free.version&gt;</code> in root <code>pom.xml</code> file.</li>
-<li>Review the <code>README</code> and <code>NOTICE</code> files in root directory.</li>
-<li>Review the <code>README</code> files in <code>application/sis-console/src/main/artifact/</code> and subdirectories.</li>
-</ul>
-<p>If not already done, build the C/C++ code of <code>sis-gdal</code> module:</p>
-<div class="codehilite"><pre><span class="nb">cd </span>storage/sis-gdal/src/main/c
+# Review project status before branching    {#prepare-source}
+
+Replace the `$OLD_VERSION` number by `$NEW_VERSION` in the values of following properties on the development branch:
+
+* `DOWNLOAD_URL` in `application/sis-console/src/main/java/org/apache/sis/console/ResourcesDownloader.java` file.
+* `<sis.non-free.version>` in root `pom.xml` file.
+* Review the `README` and `NOTICE` files in root directory.
+* Review the `README` files in `application/sis-console/src/main/artifact/` and subdirectories.
+
+If not already done, build the C/C++ code of `sis-gdal` module:
+
+{{< highlight bash >}}
+cd storage/sis-gdal/src/main/c
 make
-<span class="nb">cd</span> -
-</pre></div>
+cd -
+{{< / highlight >}}
 
+Commit and merge with other branches up to master.
 
-<p>Commit and merge with other branches up to master.</p>
-<div class="codehilite"><pre>git add --update
-git commit --message<span class="o">=</span><span class="s2">&quot;Set version number and the EPSG geodetic dataset URL to expected values after release.&quot;</span>
-<span class="c"># merge with master</span>
-</pre></div>
+{{< highlight bash >}}
+git add --update
+git commit --message="Set version number and the EPSG geodetic dataset URL to expected values after release."
+# merge with master
+{{< / highlight >}}
 
-
-<p>Before to start the release process, we need to test more extensively the master.
+Before to start the release process, we need to test more extensively the master.
 The tests described below often reveal errors that were unnoticed in daily builds.
 It is better to detect and fix them before to create the release branch.
 First, ensure that a PostgreSQL server is running and listening to the default port on local host
 (optional but recommended for more exhaustive testing —
-see <a href="./source.html#postgres">PostgreSQL testing configuration</a> for more details).
-Then execute the following commands and fix as much warnings as practical:</p>
-<div class="codehilite"><pre>systemctl start postgresql.service        <span class="c"># Optional — exact command depends on Linux distribution.</span>
-mvn clean install --define org.apache.sis.test.extensive<span class="o">=</span><span class="nb">true</span>
+see [PostgreSQL testing configuration](./source.html#postgres) for more details).
+Then execute the following commands and fix as much warnings as practical:
+
+{{< highlight bash >}}
+systemctl start postgresql.service        # Optional — exact command depends on Linux distribution.
+mvn clean install --define org.apache.sis.test.extensive=true
 mvn javadoc:aggregate
-</pre></div>
+{{< / highlight >}}
 
-
-<p>If the <code>SIS_DATA</code> environment variable was set during above build, unset it a try again.
-Ideally the build should be tested in both conditions (<code>SIS_DATA</code> set and unset).
+If the `SIS_DATA` environment variable was set during above build, unset it a try again.
+Ideally the build should be tested in both conditions (`SIS_DATA` set and unset).
 That test may be done in a separated shell (console window) in order to preserve
-the variable value in the shell performing the release.</p>
-<div class="codehilite"><pre><span class="nb">unset </span>SIS_DATA
-<span class="nb">echo</span> <span class="nv">$SIS_DATA</span>
-mvn <span class="nb">test</span>
-</pre></div>
+the variable value in the shell performing the release.
 
+{{< highlight bash >}}
+unset SIS_DATA
+echo $SIS_DATA
+mvn test
+{{< / highlight >}}
 
-<h2 id="update-crs-list">Update the list of supported CRS<a class="headerlink" href="#update-crs-list" title="Permanent link">&para;</a></h2>
-<p>The following steps regenerate
-the <a href="./tables/CoordinateOperationMethods.html">CoordinateOperationMethods</a>
-and <a href="./tables/CoordinateReferenceSystems.html">CoordinateReferenceSystems</a> pages.
-Those steps are also useful as additional tests, since failure to generate those pages may reveal problems.</p>
-<ol>
-<li>Open the <code>AuthorityCodes</code> class, search <code>DEPRECATED=0</code> (it appears in a SQL fragment) and replace by <code>(DEPRECATED=0 OR TRUE)</code>.
-     <strong>Do not commit!</strong> This is a temporary hack for including deprecated codes in the CRS list to be generated.
-     Those codes will appear with strike for making clear that they are deprecated.</li>
-<li>Open the <code>CoordinateOperationMethods</code> Java class and execute its <code>main</code> method, for example in an IDE.</li>
-<li>Open the <code>CoordinateReferenceSystems</code> Java class and execute its <code>main</code> method.</li>
-<li>If successful, HTML files will be generated in the current directory.
-     Open those files in a web browser and verify that information are okay,
-     in particular the SIS and EPSG version numbers in the first paragraph.</li>
-<li>If okay, move those two HTML files to the <code>../site/content/tables/</code> directory, overwriting previous files.</li>
-<li>Revert the hack in <code>AuthorityCodes</code> class.</li>
-<li>Commit: <code>svn commit --message="Update the list CRS and operation methods supported by Apache SIS $NEW_VERSION."</code></li>
-</ol>
-<h2 id="release-notes">Prepare release notes<a class="headerlink" href="#release-notes" title="Permanent link">&para;</a></h2>
-<p>We update JIRA soon because doing so is sometime a reminder of uncompleted tasks in source code.
-Update <a href="http://issues.apache.org/jira/browse/SIS">JIRA</a> tasks and prepare release notes as below:</p>
-<ul>
-<li>Ensure that the <em>Fix Version</em> in issues resolved since the last release includes this release version correctly.</li>
-<li>Ensure that all open issues are resolved or closed before proceeding further.</li>
-<li>On the <code>site</code> source code repository, create a <code>content/release-notes/$NEW_VERSION.html</code> file with all the features added.</li>
-<li>Use <code>content/release-notes/$OLD_VERSION.html</code> as a template, omitting everything between the <code>&lt;body&gt;</code> and <code>&lt;/body&gt;</code> tags.</li>
-<li>The release notes can be obtained from JIRA, by clicking on the <em>Versions</em> tab → the version number → <em>Release notes</em>
-    and then configuring the release notes to display HTML format and copying it.
-    A suggested approach would be to reorganize the release notes as
-    <em>New Features</em>, then <em>Improvements</em>, then <em>Bug Fixes</em>, then <em>Tests</em> and finally <em>Tasks</em>.
-    The <em>Sub Tasks</em> can be classified according the category of their parent issue.</li>
-</ul>
-<p>Commit to staging area (not published immediately):</p>
-<div class="codehilite"><pre><span class="nb">cd</span> ../site
-cp content/release-notes/<span class="nv">$OLD_VERSION</span>.html content/release-notes/<span class="nv">$NEW_VERSION</span>.html
-<span class="c"># Edit release notes before to continue.</span>
-svn add content/release-notes/<span class="nv">$NEW_VERSION</span>.html
-svn commit --message <span class="s2">&quot;Release notes for Apache SIS $NEW_VERSION.&quot;</span>
-</pre></div>
+## Update the list of supported CRS    {#update-crs-list}
 
+The following steps regenerate
+the [CoordinateOperationMethods](./tables/CoordinateOperationMethods.html)
+and [CoordinateReferenceSystems](./tables/CoordinateReferenceSystems.html) pages.
+Those steps are also useful as additional tests, since failure to generate those pages may reveal problems.
 
-<h1 id="branch">Create release branch<a class="headerlink" href="#branch" title="Permanent link">&para;</a></h1>
-<p>Execute the following commands.
+1. Open the `AuthorityCodes` class, search `DEPRECATED=0` (it appears in a SQL fragment) and replace by `(DEPRECATED=0 OR TRUE)`.
+   **Do not commit!** This is a temporary hack for including deprecated codes in the CRS list to be generated.
+   Those codes will appear with strike for making clear that they are deprecated.
+2. Open the `CoordinateOperationMethods` Java class and execute its `main` method, for example in an IDE.
+3. Open the `CoordinateReferenceSystems` Java class and execute its `main` method.
+4. If successful, HTML files will be generated in the current directory.
+   Open those files in a web browser and verify that information are okay,
+   in particular the SIS and EPSG version numbers in the first paragraph.
+5. If okay, move those two HTML files to the `../site/content/tables/` directory, overwriting previous files.
+6. Revert the hack in `AuthorityCodes` class.
+7. Commit: `svn commit --message="Update the list CRS and operation methods supported by Apache SIS $NEW_VERSION."`
+
+## Prepare release notes    {#release-notes}
+
+We update JIRA soon because doing so is sometime a reminder of uncompleted tasks in source code.
+Update [JIRA][JIRA] tasks and prepare release notes as below:
+
+* Ensure that the _Fix Version_ in issues resolved since the last release includes this release version correctly.
+* Ensure that all open issues are resolved or closed before proceeding further.
+* On the `site` source code repository, create a `content/release-notes/$NEW_VERSION.html` file with all the features added.
+* Use `content/release-notes/$OLD_VERSION.html` as a template, omitting everything between the `<body>` and `</body>` tags.
+* The release notes can be obtained from JIRA, by clicking on the _Versions_ tab → the version number → _Release notes_
+  and then configuring the release notes to display HTML format and copying it.
+  A suggested approach would be to reorganize the release notes as
+  _New Features_, then _Improvements_, then _Bug Fixes_, then _Tests_ and finally _Tasks_.
+  The _Sub Tasks_ can be classified according the category of their parent issue.
+
+Commit to staging area (not published immediately):
+
+{{< highlight bash >}}
+cd ../site
+cp content/release-notes/$OLD_VERSION.html content/release-notes/$NEW_VERSION.html
+# Edit release notes before to continue.
+svn add content/release-notes/$NEW_VERSION.html
+svn commit --message "Release notes for Apache SIS $NEW_VERSION."
+{{< / highlight >}}
+
+# Create release branch    {#branch}
+
+Execute the following commands.
 It is okay to checkout the branch in a separated directory if desired.
-The <code>SIS_RC_DIR</code> environment variable will specify that directory.</p>
-<div class="codehilite"><pre><span class="nb">cd</span> ../master
-git checkout -b <span class="nv">$NEW_VERSION</span>-RC
-<span class="nb">cd</span> <span class="nv">$NEW_VERSION</span>-RC
-<span class="nb">export </span><span class="nv">SIS_RC_DIR</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>
-</pre></div>
+The `SIS_RC_DIR` environment variable will specify that directory.
 
+{{< highlight bash >}}
+cd ../master
+git checkout -b $NEW_VERSION-RC
+cd $NEW_VERSION-RC
+export SIS_RC_DIR=`pwd`
+{{< / highlight >}}
 
-<p>Remove the modules that are not yet ready for a release.
-This may require removing <code>&lt;module&gt;</code> elements in the parent <code>pom.xml</code> file.</p>
-<div class="codehilite"><pre>git rm core/sis-cql
+Remove the modules that are not yet ready for a release.
+This may require removing `<module>` elements in the parent `pom.xml` file.
+
+{{< highlight bash >}}
+git rm core/sis-cql
 git rm core/sis-portrayal
 git rm storage/sis-shapefile
 git rm application/sis-javafx
 git rm application/sis-webapp
 git rm storage/sis-storage/src/main/java/org/apache/sis/storage/WritableGridCoverageResource.java
-git add --update    <span class="c"># for the removal of &lt;module&gt; elements in pom.xml files.</span>
-git commit --message<span class="o">=</span><span class="s2">&quot;Remove the modules to be excluded from $NEW_VERSION release.&quot;</span>
-</pre></div>
+git add --update    # for the removal of <module> elements in pom.xml files.
+git commit --message="Remove the modules to be excluded from $NEW_VERSION release."
+{{< / highlight >}}
 
+Open the root `pom.xml` file in an editor and perform the following changes:
 
-<p>Open the root <code>pom.xml</code> file in an editor and perform the following changes:</p>
-<ul>
-<li>Remove the whole <code>&lt;pluginRepositories&gt;</code> block (including comment),
-    since it should not be needed for releases (and is actually not allowed).</li>
-<li>Remove the <code>jetty</code> dependency since the module that used it has been removed.</li>
-</ul>
-<p>We need to update the SIS version numbers not only in the <code>pom.xml</code> files, but also in a few Java files.
-The following command performs the replacement using Ant.</p>
-<div class="codehilite"><pre>ant -buildfile core/sis-build-helper/src/main/ant/prepare-release.xml branch -Dsis.version<span class="o">=</span><span class="nv">$NEW_VERSION</span>
+* Remove the whole `<pluginRepositories>` block (including comment),
+  since it should not be needed for releases (and is actually not allowed).
+* Remove the `jetty` dependency since the module that used it has been removed.
+
+We need to update the SIS version numbers not only in the `pom.xml` files, but also in a few Java files.
+The following command performs the replacement using Ant.
+
+{{< highlight bash >}}
+ant -buildfile core/sis-build-helper/src/main/ant/prepare-release.xml branch -Dsis.version=$NEW_VERSION
 git rm core/sis-build-helper/src/main/ant
-</pre></div>
+{{< / highlight >}}
 
+Validate with `git diff`, search `SNAPSHOT` in the whole source directory in case we missed some, then commit:
 
-<p>Validate with <code>git diff</code>, search <code>SNAPSHOT</code> in the whole source directory in case we missed some, then commit:</p>
-<div class="codehilite"><pre><span class="n">git</span> <span class="n">add</span> <span class="o">--</span><span class="n">update</span>
-<span class="n">mvn</span> <span class="n">clean</span> <span class="n">install</span>
-<span class="n">git</span> <span class="n">commit</span> <span class="o">--</span><span class="n">message</span><span class="p">=</span>&quot;<span class="n">Set</span> <span class="n">version</span> <span class="n">number</span> <span class="n">to</span> $<span class="n">NEW_VERSION</span><span class="p">.</span>&quot;
-</pre></div>
+{{< highlight bash >}}
+git add --update
+mvn clean install
+git commit --message="Set version number to $NEW_VERSION."
+{{< / highlight >}}
 
+Maybe apply the following hacks on the release branch only (do not apply them on master).
+Check first if those hacks are still needed for the next release (they were needed for 1.0):
 
-<p>Maybe apply the following hacks on the release branch only (do not apply them on master).
-Check first if those hacks are still needed for the next release (they were needed for 1.0):</p>
-<ul>
-<li>Remove all use of <code>javax.annotation.Generated</code> annotation.
-    This removal should not have any effect on compilation result.</li>
-<li>In the root <code>pom.xml</code> under <code>maven-javadoc-plugin</code> configuration, add the following elements:<ul>
-<li><code>&lt;link&gt;http://sis.apache.org/apidocs&lt;/link&gt;</code> inside <code>&lt;links&gt;</code> block.</li>
-<li><code>&lt;additionalOption&gt;-Xdoclint:all,-reference&lt;/additionalOption&gt;</code> inside <code>&lt;additionalOptions&gt;</code> block.</li>
-</ul>
-</li>
-<li>Commit on the release branch only.</li>
-</ul>
-<h2 id="test-branch">Test branch extensively<a class="headerlink" href="#test-branch" title="Permanent link">&para;</a></h2>
-<p>Build the project with the <code>apache-release</code> profile enabled.
-This profile performs the following actions:</p>
-<ul>
-<li>Enable extensive tests (i.e. it will set the <code>org.apache.sis.test.extensive</code> property to <code>true</code>).</li>
-<li>Generate Javadoc. This may fail if the source code contains invalid Javadoc tags or broken HTML.</li>
-<li>Generate additional binary artifacts (<code>*.zip</code> and <code>*.oxt</code> files).
-    This will fail if duplicated class files or resources are found.
-    Consequently building the <code>*.zip</code> file is an additional test worth to do before deployment.</li>
-<li>Sign the artifacts.</li>
-</ul>
-<p>Each of those additional products may cause a failure that did not happen in normal builds.</p>
-<div class="codehilite"><pre>mvn clean install --activate-profiles apache-release
-find . -name <span class="s2">&quot;sis-*.asc&quot;</span> -exec gpg --verify <span class="s1">&#39;{}&#39;</span> <span class="se">\;</span>     <span class="c"># Verify signatures.</span>
-</pre></div>
+* Remove all use of `javax.annotation.Generated` annotation.
+  This removal should not have any effect on compilation result.
+* In the root `pom.xml` under `maven-javadoc-plugin` configuration, add the following elements:
+  * `<link>http://sis.apache.org/apidocs</link>` inside `<links>` block.
+  * `<additionalOption>-Xdoclint:all,-reference</additionalOption>` inside `<additionalOptions>` block.
+* Commit on the release branch only.
 
+## Test branch extensively    {#test-branch}
 
-<p>More the <code>target</code> directory and execute all examples documented in the <a href="./command-line.html">command-line interface page</a>
-with the <code>sis</code> command replaced by the following:</p>
-<div class="codehilite"><pre>java -classpath <span class="s2">&quot;binaries/*&quot;</span> -enableassertions org.apache.sis.console.Command
-</pre></div>
+Build the project with the `apache-release` profile enabled.
+This profile performs the following actions:
 
+* Enable extensive tests (i.e. it will set the `org.apache.sis.test.extensive` property to `true`).
+* Generate Javadoc. This may fail if the source code contains invalid Javadoc tags or broken HTML.
+* Generate additional binary artifacts (`*.zip` and `*.oxt` files).
+  This will fail if duplicated class files or resources are found.
+  Consequently building the `*.zip` file is an additional test worth to do before deployment.
+* Sign the artifacts.
 
-<h2 id="maven-nonfree">Prepare non-free resources<a class="headerlink" href="#maven-nonfree" title="Permanent link">&para;</a></h2>
-<p>Go to the directory that contains a checkout of <code>https://svn.apache.org/repos/asf/sis/data/non-free/sis-epsg</code>.
+Each of those additional products may cause a failure that did not happen in normal builds.
+
+{{< highlight bash >}}
+mvn clean install --activate-profiles apache-release
+find . -name "sis-*.asc" -exec gpg --verify '{}' \;     # Verify signatures.
+{{< / highlight >}}
+
+More the `target` directory and execute all examples documented in the [command-line interface page](./command-line.html)
+with the `sis` command replaced by the following:
+
+{{< highlight bash >}}
+    java -classpath "binaries/*" -enableassertions org.apache.sis.console.Command
+{{< / highlight >}}
+
+## Prepare non-free resources    {#maven-nonfree}
+
+Go to the directory that contains a checkout of `https://svn.apache.org/repos/asf/sis/data/non-free/sis-epsg`.
 Those modules will not be part of the distribution (except on Maven), but we nevertheless need to ensure that they work.
-Replace occurrences of <code>&lt;version&gt;$OLD_VERSION&lt;/version&gt;</code> by <code>&lt;version&gt;$NEW_VERSION&lt;/version&gt;</code> in the <code>pom.xml</code> files.</p>
-<div class="codehilite"><pre><span class="nb">cd</span> ../non-free
+Replace occurrences of `<version>$OLD_VERSION</version>` by `<version>$NEW_VERSION</version>` in the `pom.xml` files.
+
+{{< highlight bash >}}
+cd ../non-free
 svn update
 mvn clean install
-mvn javadoc:javadoc                   <span class="c"># Test that javadoc can be generated.</span>
-svn commit --message <span class="s2">&quot;Set version number and dependencies to $NEW_VERSION.&quot;</span>
-</pre></div>
+mvn javadoc:javadoc                   # Test that javadoc can be generated.
+svn commit --message "Set version number and dependencies to $NEW_VERSION."
+{{< / highlight >}}
 
+## Integration test    {#integration-tests}
 
-<h2 id="integration-tests">Integration test<a class="headerlink" href="#integration-tests" title="Permanent link">&para;</a></h2>
-<p>Open the root <code>pom.xml</code> file of integration tests.
-Set version numbers to <code>$NEW_VERSION</code> without <code>-SNAPSHOT</code> suffix.
+Open the root `pom.xml` file of integration tests.
+Set version numbers to `$NEW_VERSION` without `-SNAPSHOT` suffix.
 Verify the configuration and version of Maven plugins.
-Then test and commit (note that execution may be slow).</p>
-<div class="codehilite"><pre><span class="nb">cd</span> ../distribution/integration-test
+Then test and commit (note that execution may be slow).
+
+{{< highlight bash >}}
+cd ../distribution/integration-test
 svn update
-<span class="nb">cd </span>maven
-mvn clean <span class="nb">test</span>
-svn commit --message <span class="s2">&quot;Set version number and dependencies to $NEW_VERSION.&quot;</span>
-</pre></div>
+cd maven
+mvn clean test
+svn commit --message "Set version number and dependencies to $NEW_VERSION."
+{{< / highlight >}}
 
+# Deploy Maven artifacts    {#maven-deploy}
 
-<h1 id="maven-deploy">Deploy Maven artifacts<a class="headerlink" href="#maven-deploy" title="Permanent link">&para;</a></h1>
-<p>If above verifications succeeded, performs the following <em>temporary</em> changes
-(to be discarded after the deployment to Maven repository):</p>
-<ul>
-<li>Remove temporarily the <code>sis-openoffice</code> module from <code>application/pom.xml</code>.</li>
-<li>Remove the <code>test-jar</code> goal from <code>maven-jar-plugin</code> in the root <code>pom.xml</code>.</li>
-<li>Remove all SIS dependencies declared with <code>&lt;type&gt;test-jar&lt;/type&gt;</code> in all <code>pom.xml</code> files.
-    This hack will force us to skip test compilations.</li>
-</ul>
-<p>Then deploy SIS (without test JAR files).
+If above verifications succeeded, performs the following _temporary_ changes
+(to be discarded after the deployment to Maven repository):
+
+* Remove temporarily the `sis-openoffice` module from `application/pom.xml`.
+* Remove the `test-jar` goal from `maven-jar-plugin` in the root `pom.xml`.
+* Remove all SIS dependencies declared with `<type>test-jar</type>` in all `pom.xml` files.
+  This hack will force us to skip test compilations.
+
+Then deploy SIS (without test JAR files).
 Deploy also the non-free resources in a staging repository separated from the rest of Apache SIS.
-If there is any issue with this deployment, the staging repository can easily be dropped and recreated.</p>
-<div class="codehilite"><pre><span class="nb">cd</span> <span class="nv">$SIS_RC_DIR</span>
-mvn clean deploy --activate-profiles apache-release --define maven.test.skip<span class="o">=</span><span class="nb">true</span>
-<span class="nb">cd</span> ../non-free
+If there is any issue with this deployment, the staging repository can easily be dropped and recreated.
+
+{{< highlight bash >}}
+cd $SIS_RC_DIR
+mvn clean deploy --activate-profiles apache-release --define maven.test.skip=true
+cd ../non-free
 mvn clean deploy --activate-profiles apache-release
-</pre></div>
+{{< / highlight >}}
 
+## Verify and close the Nexus release artifacts    {#nexus-close}
 
-<h2 id="nexus-close">Verify and close the Nexus release artifacts<a class="headerlink" href="#nexus-close" title="Permanent link">&para;</a></h2>
-<p>Verify the staged artifacts in the <a href="https://repository.apache.org/index.html">Nexus repository</a>.
-The artifacts can be found under <em>Build Promotion</em> → <em>Staging repositories</em>, and searching for <code>org.apache.sis</code> in the <em>Repository</em> column.
-Navigate through the artifact tree and make sure that all javadoc, source and jar files have <code>.asc</code> (GPG signature) and <code>.md5</code> files.
-Select any <code>*-javadoc.jar</code> file and click on the <cite>Archive Browser</cite> tab on the right side.
-Select any <code>*.html</code> file which is known to use some of the custom taglets defined in the <code>sis-build-helper</code> module.
+Verify the staged artifacts in the [Nexus repository][repository].
+The artifacts can be found under _Build Promotion_ → _Staging repositories_, and searching for `org.apache.sis` in the _Repository_ column.
+Navigate through the artifact tree and make sure that all javadoc, source and jar files have `.asc` (GPG signature) and `.md5` files.
+Select any `*-javadoc.jar` file and click on the <cite>Archive Browser</cite> tab on the right side.
+Select any `*.html` file which is known to use some of the custom taglets defined in the `sis-build-helper` module.
 Click on that file and verify that the custom elements are rendered properly.
-In particular, all Java code snippets are missing if the <code>@preformat</code> taglet had not be properly registered,
-so try to see at least one code snippet.</p>
-<p>Additional cleaning:</p>
-<ul>
-<li>Delete all <code>org/apache/sis/parent/$NEW_VERSION/parent-$NEW_VERSION-source-release.zip.*</code> files on the Nexus repository.
-    They should not be there - source release will be deployed on an other repository later.</li>
-</ul>
-<p>Close the Nexus staging repository:</p>
-<ul>
-<li>Click the checkboxes for the open staging repositories (<code>org.apache.sis-&lt;id&gt;</code>) and press <em>Close</em> in the menu bar.</li>
-<li>In the description field, enter "<code>SIS $NEW_VERSION-RC$RELEASE_CANDIDATE</code>"
-    (replace <code>$NEW_VERSION</code> and <code>$RELEASE_CANDIDATE</code> by appropriate values.
-    This will not be done automatically since this field box is not our bash shell!).</li>
-<li>Click on the <code>org.apache.sis-&lt;id&gt;</code> link in order to get the URL to the temporary Maven repository created by Nexus.</li>
-</ul>
-<p>We will announce later (in the <cite>Put the release candidate up for a vote</cite> section) on the <code>dev@</code> mailing list
-the availability of this temporary repository for testing purpose.</p>
-<p>In the Nexus repository used for non-free resources:</p>
-<ul>
-<li>Delete all <code>*-source-release.zip.*</code> files since they duplicate the <code>*-source.zip.*</code> files.</li>
-<li>In the <code>sis-epsg-$NEW_VERSION.jar</code> file, verify that <code>META-INF/LICENSE</code> contain the EPSG terms of use.</li>
-<li>Close the repository and take note of its URL.</li>
-</ul>
-<h2 id="nexus-text">Test the Nexus release artifacts<a class="headerlink" href="#nexus-text" title="Permanent link">&para;</a></h2>
-<p>Go to the test Maven project.
-Open the root <code>pom.xml</code> file and set the <code>&lt;version&gt;</code> number to the SIS release to be tested.
-Then go to the <code>&lt;url&gt;</code> declaration of the first <code>&lt;repository&gt;</code> and replace value by the URL
+In particular, all Java code snippets are missing if the `@preformat` taglet had not be properly registered,
+so try to see at least one code snippet.
+
+Additional cleaning:
+
+* Delete all `org/apache/sis/parent/$NEW_VERSION/parent-$NEW_VERSION-source-release.zip.*` files on the Nexus repository.
+  They should not be there - source release will be deployed on an other repository later.
+
+Close the Nexus staging repository:
+
+* Click the checkboxes for the open staging repositories (`org.apache.sis-<id>`) and press _Close_ in the menu bar.
+* In the description field, enter "`SIS $NEW_VERSION-RC$RELEASE_CANDIDATE`"
+  (replace `$NEW_VERSION` and `$RELEASE_CANDIDATE` by appropriate values.
+  This will not be done automatically since this field box is not our bash shell!).
+* Click on the `org.apache.sis-<id>` link in order to get the URL to the temporary Maven repository created by Nexus.
+
+We will announce later (in the <cite>Put the release candidate up for a vote</cite> section) on the `dev@` mailing list
+the availability of this temporary repository for testing purpose.
+
+In the Nexus repository used for non-free resources:
+
+* Delete all `*-source-release.zip.*` files since they duplicate the `*-source.zip.*` files.
+* In the `sis-epsg-$NEW_VERSION.jar` file, verify that `META-INF/LICENSE` contain the EPSG terms of use.
+* Close the repository and take note of its URL.
+
+## Test the Nexus release artifacts    {#nexus-text}
+
+Go to the test Maven project.
+Open the root `pom.xml` file and set the `<version>` number to the SIS release to be tested.
+Then go to the `<url>` declaration of the first `<repository>` and replace value by the URL
 of the temporary Maven repository created by Nexus.
-Usually, only the 3 last digits need to be updated.</p>
-<div class="codehilite"><pre><span class="nb">cd</span> ../releases/integration-test/maven
-<span class="c"># Edit &lt;url&gt; in pom.xml before to continue.</span>
+Usually, only the 3 last digits need to be updated.
+
+{{< highlight bash >}}
+cd ../releases/integration-test/maven
+# Edit <url> in pom.xml before to continue.
 mvn compile
-svn commit -m <span class="s2">&quot;Test project for SIS $NEW_VERSION-RC$RELEASE_CANDIDATE&quot;</span>
-</pre></div>
+svn commit -m "Test project for SIS $NEW_VERSION-RC$RELEASE_CANDIDATE"
+{{< / highlight >}}
 
+Create a temporary directory where Apache SIS will write the EPSG dataset.
 
-<p>Create a temporary directory where Apache SIS will write the EPSG dataset.</p>
-<div class="codehilite"><pre>mkdir target/SpatialMetadata
-<span class="nb">export </span><span class="nv">SIS_DATA</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>/target/SpatialMetadata
-</pre></div>
+{{< highlight bash >}}
+mkdir target/SpatialMetadata
+export SIS_DATA=`pwd`/target/SpatialMetadata
+{{< / highlight >}}
 
+Clear the local Maven repository in order to force downloads from the Nexus repository, then test.
+This will also verify the checksums.
 
-<p>Clear the local Maven repository in order to force downloads from the Nexus repository, then test.
-This will also verify the checksums.</p>
-<div class="codehilite"><pre>rm -r ~/.m2/repository/org/apache/sis
+{{< highlight bash >}}
+rm -r ~/.m2/repository/org/apache/sis
 mvn package --strict-checksums
-</pre></div>
+{{< / highlight >}}
 
+Verify that the EPSG dataset has been created, then cleanup:
 
-<p>Verify that the EPSG dataset has been created, then cleanup:</p>
-<div class="codehilite"><pre>ll <span class="nv">$SIS_DATA</span>/Databases/SpatialMetadata
+{{< highlight bash >}}
+ll $SIS_DATA/Databases/SpatialMetadata
 mvn clean
-</pre></div>
+{{< / highlight >}}
 
+# Stage the source, binary and javadoc artifacts    {#stage}
 
-<h1 id="stage">Stage the source, binary and javadoc artifacts<a class="headerlink" href="#stage" title="Permanent link">&para;</a></h1>
-<p>Generate the Javadoc:</p>
-<div class="codehilite"><pre><span class="nb">cd</span> <span class="nv">$SIS_RC_DIR</span>
-git checkout .            <span class="c"># Discard local changes, in particular the hack for excluding test files.</span>
+Generate the Javadoc:
+
+{{< highlight bash >}}
+cd $SIS_RC_DIR
+git checkout .            # Discard local changes, in particular the hack for excluding test files.
 mvn clean install --activate-profiles apache-release
 mvn javadoc:aggregate
-<span class="nb">cd </span>target/site
-zip -9 -r apache-sis-<span class="nv">$NEW_VERSION</span>-doc.zip apidocs
-<span class="nb">cd</span> ../..
-</pre></div>
+cd target/site
+zip -9 -r apache-sis-$NEW_VERSION-doc.zip apidocs
+cd ../..
+{{< / highlight >}}
 
+## Initialize the distribution directory    {#dist}
 
-<h2 id="dist">Initialize the distribution directory<a class="headerlink" href="#dist" title="Permanent link">&para;</a></h2>
-<p>Create the directory for the new version and release candidate within the distribution directory.
-The <code>$RELEASE_CANDIDATE</code> variable shall be the number of current release attempt.</p>
-<div class="codehilite"><pre><span class="nb">cd</span> ../releases/distribution
+Create the directory for the new version and release candidate within the distribution directory.
+The `$RELEASE_CANDIDATE` variable shall be the number of current release attempt.
+
+{{< highlight bash >}}
+cd ../releases/distribution
 svn update
-mkdir -p <span class="nv">$NEW_VERSION</span>/RC<span class="nv">$RELEASE_CANDIDATE</span>
-svn add <span class="nv">$NEW_VERSION</span>
-<span class="nb">cd</span> <span class="nv">$NEW_VERSION</span>/RC<span class="nv">$RELEASE_CANDIDATE</span>
-<span class="nb">export </span><span class="nv">DIST_DIR</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>
-</pre></div>
+mkdir -p $NEW_VERSION/RC$RELEASE_CANDIDATE
+svn add $NEW_VERSION
+cd $NEW_VERSION/RC$RELEASE_CANDIDATE
+export DIST_DIR=`pwd`
+{{< / highlight >}}
 
+Copy the `HEADER.html` file from the previous release.
+Update the file content if necessary.
 
-<p>Copy the <code>HEADER.html</code> file from the previous release.
-Update the file content if necessary.</p>
-<div class="codehilite"><pre>svn copy https://dist.apache.org/repos/dist/release/sis/<span class="nv">$OLD_VERSION</span>/HEADER.html .
-</pre></div>
+{{< highlight bash >}}
+svn copy https://dist.apache.org/repos/dist/release/sis/$OLD_VERSION/HEADER.html .
+{{< / highlight >}}
 
+Move the files generated by Maven to the distribution directory:
 
-<p>Move the files generated by Maven to the distribution directory:</p>
-<div class="codehilite"><pre>mv <span class="nv">$SIS_RC_DIR</span>/target/sis-<span class="nv">$NEW_VERSION</span>-* .
-mv <span class="nv">$SIS_RC_DIR</span>/target/site/apache-sis-<span class="nv">$NEW_VERSION</span>-* .
-mv <span class="nv">$SIS_RC_DIR</span>/target/distribution/apache-sis-<span class="nv">$NEW_VERSION</span>.zip .
-</pre></div>
+{{< highlight bash >}}
+mv $SIS_RC_DIR/target/sis-$NEW_VERSION-* .
+mv $SIS_RC_DIR/target/site/apache-sis-$NEW_VERSION-* .
+mv $SIS_RC_DIR/target/distribution/apache-sis-$NEW_VERSION.zip .
+{{< / highlight >}}
 
+Rename the files to something more conform to the convention seen in other Apache projects:
 
-<p>Rename the files to something more conform to the convention seen in other Apache projects:</p>
-<div class="codehilite"><pre>mv apache-sis-<span class="nv">$NEW_VERSION</span>.zip             apache-sis-<span class="nv">$NEW_VERSION</span>-bin.zip
-mv sis-<span class="nv">$NEW_VERSION</span>-source-release.zip     apache-sis-<span class="nv">$NEW_VERSION</span>-src.zip
-mv sis-<span class="nv">$NEW_VERSION</span>-source-release.zip.asc apache-sis-<span class="nv">$NEW_VERSION</span>-src.zip.asc
-</pre></div>
+{{< highlight bash >}}
+mv apache-sis-$NEW_VERSION.zip             apache-sis-$NEW_VERSION-bin.zip
+mv sis-$NEW_VERSION-source-release.zip     apache-sis-$NEW_VERSION-src.zip
+mv sis-$NEW_VERSION-source-release.zip.asc apache-sis-$NEW_VERSION-src.zip.asc
+{{< / highlight >}}
 
+## Sign and commit    {#sign}
 
-<h2 id="sign">Sign and commit<a class="headerlink" href="#sign" title="Permanent link">&para;</a></h2>
-<p>Sign the source, javadoc and binary artifacts:</p>
-<div class="codehilite"><pre>shas512um apache-sis-<span class="nv">$NEW_VERSION</span>-src.zip &gt; apache-sis-<span class="nv">$NEW_VERSION</span>-src.zip.sha
-md5sum    apache-sis-<span class="nv">$NEW_VERSION</span>-src.zip &gt; apache-sis-<span class="nv">$NEW_VERSION</span>-src.zip.md5
+Sign the source, javadoc and binary artifacts:
 
-gpg --armor --detach-sign --default-key <span class="nv">$SIGNING_KEY</span> apache-sis-<span class="nv">$NEW_VERSION</span>-doc.zip
-sha512sum apache-sis-<span class="nv">$NEW_VERSION</span>-doc.zip &gt; apache-sis-<span class="nv">$NEW_VERSION</span>-doc.zip.sha
-md5sum    apache-sis-<span class="nv">$NEW_VERSION</span>-doc.zip &gt; apache-sis-<span class="nv">$NEW_VERSION</span>-doc.zip.md5
+{{< highlight bash >}}
+shas512um apache-sis-$NEW_VERSION-src.zip > apache-sis-$NEW_VERSION-src.zip.sha
+md5sum    apache-sis-$NEW_VERSION-src.zip > apache-sis-$NEW_VERSION-src.zip.md5
 
-gpg --armor --detach-sign --default-key <span class="nv">$SIGNING_KEY</span> apache-sis-<span class="nv">$NEW_VERSION</span>-bin.zip
-sha512sum apache-sis-<span class="nv">$NEW_VERSION</span>-bin.zip &gt; apache-sis-<span class="nv">$NEW_VERSION</span>-bin.zip.sha
-md5sum    apache-sis-<span class="nv">$NEW_VERSION</span>-bin.zip &gt; apache-sis-<span class="nv">$NEW_VERSION</span>-bin.zip.md5
-</pre></div>
+gpg --armor --detach-sign --default-key $SIGNING_KEY apache-sis-$NEW_VERSION-doc.zip
+sha512sum apache-sis-$NEW_VERSION-doc.zip > apache-sis-$NEW_VERSION-doc.zip.sha
+md5sum    apache-sis-$NEW_VERSION-doc.zip > apache-sis-$NEW_VERSION-doc.zip.md5
 
+gpg --armor --detach-sign --default-key $SIGNING_KEY apache-sis-$NEW_VERSION-bin.zip
+sha512sum apache-sis-$NEW_VERSION-bin.zip > apache-sis-$NEW_VERSION-bin.zip.sha
+md5sum    apache-sis-$NEW_VERSION-bin.zip > apache-sis-$NEW_VERSION-bin.zip.md5
+{{< / highlight >}}
 
-<p>Verify checksums and signatures:</p>
-<div class="codehilite"><pre>find . -name <span class="s2">&quot;*.md5&quot;</span> -exec md5sum    --check <span class="s1">&#39;{}&#39;</span> <span class="se">\;</span>
-find . -name <span class="s2">&quot;*.sha&quot;</span> -exec sha512sum --check <span class="s1">&#39;{}&#39;</span> <span class="se">\;</span>
-find . -name <span class="s2">&quot;*.asc&quot;</span> -exec gpg      --verify <span class="s1">&#39;{}&#39;</span> <span class="se">\;</span>
-</pre></div>
+Verify checksums and signatures:
 
+{{< highlight bash >}}
+find . -name "*.md5" -exec md5sum    --check '{}' \;
+find . -name "*.sha" -exec sha512sum --check '{}' \;
+find . -name "*.asc" -exec gpg      --verify '{}' \;
+{{< / highlight >}}
 
-<p>Commit:</p>
-<div class="codehilite"><pre>svn add apache-sis-<span class="nv">$NEW_VERSION</span>-*
-<span class="nb">cd</span> ../..
-svn commit --message <span class="s2">&quot;SIS release candidate $RELEASE_CANDIDATE&quot;</span>
-</pre></div>
+Commit:
 
+{{< highlight bash >}}
+svn add apache-sis-$NEW_VERSION-*
+cd ../..
+svn commit --message "SIS release candidate $RELEASE_CANDIDATE"
+{{< / highlight >}}
 
-<h2 id="apidocs">Update online Javadoc<a class="headerlink" href="#apidocs" title="Permanent link">&para;</a></h2>
-<p>Copy the Javadoc to the web site staging directory:</p>
-<div class="codehilite"><pre><span class="nb">cd</span> ../site/content
+## Update online Javadoc     {#apidocs}
+
+Copy the Javadoc to the web site staging directory:
+
+{{< highlight bash >}}
+cd ../site/content
 rm -r apidocs
-unzip <span class="nv">$DIST_DIR</span>/apache-sis-<span class="nv">$NEW_VERSION</span>-doc.zip
-</pre></div>
+unzip $DIST_DIR/apache-sis-$NEW_VERSION-doc.zip
+{{< / highlight >}}
 
+Execute `svn add` for new files and `svn remove` for deleted files:
 
-<p>Execute <code>svn add</code> for new files and <code>svn remove</code> for deleted files:</p>
-<div class="codehilite"><pre><span class="nb">cd </span>apidocs
-svn status | gawk <span class="s1">&#39;/^\?.*/ {print $2}&#39;</span> | xargs svn add
-svn status | gawk <span class="s1">&#39;/^\!.*/ {print $2}&#39;</span> | xargs svn remove
-svn commit --message <span class="s2">&quot;Update javadoc for SIS $NEW_RELEASE.&quot;</span>
-</pre></div>
+{{< highlight bash >}}
+cd apidocs
+svn status | gawk '/^\?.*/ {print $2}' | xargs svn add
+svn status | gawk '/^\!.*/ {print $2}' | xargs svn remove
+svn commit --message "Update javadoc for SIS $NEW_RELEASE."
+{{< / highlight >}}
 
+## Test the release    {#test}
 
-<h2 id="test">Test the release<a class="headerlink" href="#test" title="Permanent link">&para;</a></h2>
-<p>Execute the following commands in any temporary directory for testing the sources:</p>
-<div class="codehilite"><pre>wget https://dist.apache.org/repos/dist/dev/sis/<span class="nv">$NEW_VERSION</span>/RC<span class="nv">$RELEASE_CANDIDATE</span>/apache-sis-<span class="nv">$NEW_VERSION</span>-src.zip <span class="se">\</span>
-     https://dist.apache.org/repos/dist/dev/sis/<span class="nv">$NEW_VERSION</span>/RC<span class="nv">$RELEASE_CANDIDATE</span>/apache-sis-<span class="nv">$NEW_VERSION</span>-src.zip.asc
-<span class="c"># Test</span>
-gpg --verify apache-sis-<span class="nv">$NEW_VERSION</span>-src.zip.asc
-unzip apache-sis-<span class="nv">$NEW_VERSION</span>-src.zip
-<span class="nb">cd </span>sis-<span class="nv">$NEW_VERSION</span>
+Execute the following commands in any temporary directory for testing the sources:
+
+{{< highlight bash >}}
+wget https://dist.apache.org/repos/dist/dev/sis/$NEW_VERSION/RC$RELEASE_CANDIDATE/apache-sis-$NEW_VERSION-src.zip \
+     https://dist.apache.org/repos/dist/dev/sis/$NEW_VERSION/RC$RELEASE_CANDIDATE/apache-sis-$NEW_VERSION-src.zip.asc
+# Test
+gpg --verify apache-sis-$NEW_VERSION-src.zip.asc
+unzip apache-sis-$NEW_VERSION-src.zip
+cd sis-$NEW_VERSION
 mvn install
-</pre></div>
+{{< / highlight >}}
 
+Execute the following commands in any temporary directory for testing the binary:
 
-<p>Execute the following commands in any temporary directory for testing the binary:</p>
-<div class="codehilite"><pre>wget https://dist.apache.org/repos/dist/dev/sis/<span class="nv">$NEW_VERSION</span>/RC<span class="nv">$RELEASE_CANDIDATE</span>/apache-sis-<span class="nv">$NEW_VERSION</span>-bin.zip <span class="se">\</span>
-     https://dist.apache.org/repos/dist/dev/sis/<span class="nv">$NEW_VERSION</span>/RC<span class="nv">$RELEASE_CANDIDATE</span>/apache-sis-<span class="nv">$NEW_VERSION</span>-bin.zip.asc
-<span class="c"># Test</span>
-gpg --verify apache-sis-<span class="nv">$NEW_VERSION</span>-bin.zip.asc
-unzip apache-sis-<span class="nv">$NEW_VERSION</span>-bin.zip
-<span class="nb">cd </span>apache-sis-<span class="nv">$NEW_VERSION</span>
-<span class="nb">unset </span>SIS_DATA
+{{< highlight bash >}}
+wget https://dist.apache.org/repos/dist/dev/sis/$NEW_VERSION/RC$RELEASE_CANDIDATE/apache-sis-$NEW_VERSION-bin.zip \
+     https://dist.apache.org/repos/dist/dev/sis/$NEW_VERSION/RC$RELEASE_CANDIDATE/apache-sis-$NEW_VERSION-bin.zip.asc
+# Test
+gpg --verify apache-sis-$NEW_VERSION-bin.zip.asc
+unzip apache-sis-$NEW_VERSION-bin.zip
+cd apache-sis-$NEW_VERSION
+unset SIS_DATA
 bin/sis about --verbose
 bin/sis metadata https://github.com/opengeospatial/geoapi/raw/master/geoapi-netcdf/src/test/resources/org/opengis/wrapper/netcdf/NCEP-SST.nc
 bin/sis crs http://svn.apache.org/repos/asf/sis/trunk/core/sis-referencing/src/test/resources/org/apache/sis/referencing/crs/ProjectedCRS.xml --format WKT
-</pre></div>
+{{< / highlight >}}
 
+# Prepare OpenOffice add-in    {#openoffice}
 
-<h1 id="openoffice">Prepare OpenOffice add-in<a class="headerlink" href="#openoffice" title="Permanent link">&para;</a></h1>
-<p>The OpenOffice add-in source code can be distributed under Apache 2 license only.
+The OpenOffice add-in source code can be distributed under Apache 2 license only.
 But the binary may contain non-free resources, notably the EPSG geodetic dataset.
 For now, the release manager should apply the following local modifications before
-to build the add-in:</p>
-<ul>
-<li>Move to the <code>application/sis-openoffice</code> directory.</li>
-<li>Replace the <code>src/main/unopkg/license.txt</code> file by EPSG terms of use.
-    A copy is found in the <code>non-free</code> group of SIS modules.</li>
-<li>Run <code>mvn package --activate-profiles non-free</code>.</li>
-</ul>
-<h1 id="prepare-website">Prepare Web site<a class="headerlink" href="#prepare-website" title="Permanent link">&para;</a></h1>
-<p>Review and update the <code>content/DOAP.rdf</code> file on the <code>site</code> source code repository.
-Add a new <code>&lt;release&gt;</code> block for the new release with the estimated release date.</p>
-<p>Update the version numbers from the old one to <code>$NEW_VERSION</code> in the following files.</p>
-<ul>
-<li><code>content/index.mdtext</code></li>
-<li><code>content/gdal.mdtext</code></li>
-<li><code>content/downloads.mdtext</code> (need also to update <code>$NEW_VERSION-SNAPSHOT</code> to the next snapshot version)</li>
-<li><code>content/command-line.mdtext</code></li>
-<li><code>content/epsg.mdtext</code> (be aware that the version number may sometime be behind the SIS version number)</li>
-</ul>
-<p>Commit:</p>
-<div class="codehilite"><pre>svn commit --message <span class="s2">&quot;Prepare documentation for the $NEW_VERSION release.&quot;</span>
-</pre></div>
+to build the add-in:
 
+* Move to the `application/sis-openoffice` directory.
+* Replace the `src/main/unopkg/license.txt` file by EPSG terms of use.
+  A copy is found in the `non-free` group of SIS modules.
+* Run `mvn package --activate-profiles non-free`.
 
-<p>The new web site will be published in the <a href="http://sis.staging.apache.org">staging area</a>.
-It will not yet be published on <code>http://sis.apache.org</code>.</p>
-<h1 id="vote">Put the release candidate up for a vote<a class="headerlink" href="#vote" title="Permanent link">&para;</a></h1>
-<ul>
-<li>Create a VOTE email thread on <code>dev@</code> to record votes as replies.
-    A template is available <a href="templates/release-vote.txt">here</a>.</li>
-<li>Create a DISCUSS email thread on <code>dev@</code> for any vote questions.
-    A template is available <a href="templates/release-discuss.txt">here</a>.</li>
-<li>Perform a review of the release and cast your vote:</li>
-<li>a -1 vote does not necessarily mean that the vote must be redone, however it is usually a good idea
-    to rollback the release if a -1 vote is received. See <em>Recovering from a vetoed release</em> below.</li>
-<li>After the vote has been open for at least 72 hours, has at least three +1 PMC votes and no -1 votes,
-    then post the results to the vote thread:<ul>
-<li>Reply to the initial email and prepend to the original subject "[RESULT]"</li>
-<li>Include a list of everyone who voted +1, 0 or -1.</li>
-</ul>
-</li>
-</ul>
-<h2 id="veto">Recovering from a vetoed release<a class="headerlink" href="#veto" title="Permanent link">&para;</a></h2>
-<p>Reply to the initial vote email and prepend to the original subject:</p>
-<div class="codehilite"><pre>[CANCELED]
-</pre></div>
+# Prepare Web site    {#prepare-website}
 
+Review and update the `content/DOAP.rdf` file on the `site` source code repository.
+Add a new `<release>` block for the new release with the estimated release date.
 
-<p>Delete the svn tag created by the release:perform step:</p>
-<div class="codehilite"><pre>svn delete https://svn.apache.org/repos/asf/sis/tags/<span class="nv">$NEW_VERSION</span> --message <span class="s2">&quot;deleting tag from rolled back release&quot;</span>
-</pre></div>
+Update the version numbers from the old one to `$NEW_VERSION` in the following files.
 
+* `content/index.mdtext`
+* `content/gdal.mdtext`
+* `content/downloads.mdtext` (need also to update `$NEW_VERSION-SNAPSHOT` to the next snapshot version)
+* `content/command-line.mdtext`
+* `content/epsg.mdtext` (be aware that the version number may sometime be behind the SIS version number)
 
-<p>Drop the Nexus staging repository:</p>
-<ul>
-<li>Go to <a href="https://repository.apache.org/index.html">Nexus repository</a> → <em>Build Promotion</em> → <em>Staging repositories</em> and search for <code>org.apache.sis</code> in the <em>Repository</em> column.</li>
-<li>Right click on the closed staging repositories (<code>org.apache.sis-&lt;id&gt;</code>) and select <em>Drop</em>.</li>
-</ul>
-<p>Make the required updates that caused the vote to be canceled during the release cycle.</p>
-<h1 id="finalize">Finalize the release<a class="headerlink" href="#finalize" title="Permanent link">&para;</a></h1>
-<p>The artificats in the repository are not yet mirrored and available for Maven to download.
-Promote the staged Nexus artifacts, by releasing them.</p>
-<ul>
-<li>Go to <a href="https://repository.apache.org/index.html">Nexus repository</a> → <em>Build Promotion</em> → <em>Staging repositories</em> and search for <code>org.apache.sis</code> in the <em>Repository</em> column.</li>
-<li>Click the checkboxes of the closed staging repositories (<code>org.apache.sis-&lt;id&gt;</code>) and press <em>Release</em> in the menu bar.</li>
-</ul>
-<p>Check in the source and binary artifacts into distribution svn which will be pulled by all mirrors within 24 hours.
-The <code>dist/dev</code> svn is not mirrored, but the <code>dist/release</code> is.
-From any directory:</p>
-<div class="codehilite"><pre>svn move https://dist.apache.org/repos/dist/dev/sis/<span class="nv">$NEW_VERSION</span>/RC<span class="nv">$RELEASE_CANDIDATE</span> <span class="se">\</span>
-         https://dist.apache.org/repos/dist/release/sis/<span class="nv">$NEW_VERSION</span> <span class="se">\</span>
-    --message <span class="s2">&quot;Committing SIS Source and Binary Release Candidate $RELEASE_CANDIDATE for SIS-$NEW_VERSION.&quot;</span>
+Commit:
 
-svn delete https://dist.apache.org/repos/dist/dev/sis/<span class="nv">$NEW_VERSION</span> <span class="se">\</span>
---message <span class="s2">&quot;Delete SIS $NEW_VERSION staging repository after release.&quot;</span>
-</pre></div>
+{{< highlight bash >}}
+svn commit --message "Prepare documentation for the $NEW_VERSION release."
+{{< / highlight >}}
 
+The new web site will be published in the [staging area](http://sis.staging.apache.org).
+It will not yet be published on `http://sis.apache.org`.
 
-<p>Update <a href="http://issues.apache.org/jira/browse/SIS">JIRA</a>:</p>
-<ul>
-<li>Update the JIRA versions to mark the version as "released".</li>
-<li>Set the date to the date that the release was approved.</li>
-<li>Prepare for the next release:<ul>
-<li>Make a new release entry in JIRA for the next release.</li>
-<li>Update the <a href="https://cwiki.apache.org/confluence/display/SIS/Roadmap">Roadmap</a> wiki page.</li>
-</ul>
-</li>
-</ul>
-<h2 id="verify">Verify release signatures<a class="headerlink" href="#verify" title="Permanent link">&para;</a></h2>
-<p>Download all source and binary artifacts into a new directory, then execute in that directory:</p>
-<div class="codehilite"><pre>find . -name <span class="s2">&quot;*.asc&quot;</span> -exec gpg --verify <span class="s1">&#39;{}&#39;</span> <span class="se">\;</span>
-</pre></div>
+# Put the release candidate up for a vote    {#vote}
 
+* Create a VOTE email thread on `dev@` to record votes as replies.
+  A template is available [here](templates/release-vote.txt).
+* Create a DISCUSS email thread on `dev@` for any vote questions.
+  A template is available [here](templates/release-discuss.txt).
+* Perform a review of the release and cast your vote:
+* a -1 vote does not necessarily mean that the vote must be redone, however it is usually a good idea
+  to rollback the release if a -1 vote is received. See _Recovering from a vetoed release_ below.
+* After the vote has been open for at least 72 hours, has at least three +1 PMC votes and no -1 votes,
+  then post the results to the vote thread:
+  + Reply to the initial email and prepend to the original subject "[RESULT]"
+  + Include a list of everyone who voted +1, 0 or -1.
 
-<p>The output shall report only good signatures.</p>
-<h2 id="announce">Announce the release<a class="headerlink" href="#announce" title="Permanent link">&para;</a></h2>
-<ul>
-<li>WAIT 24 hours after committing releases for mirrors to replicate.</li>
-<li>Publish the web site updates:<ul>
-<li>Login to the <a href="https://cms.apache.org/sis/">ASF Content Management System</a>.</li>
-<li>Click on <em>Publish sis site</em>.</li>
-</ul>
-</li>
-<li>Make an announcement about the release on the <code>dev@</code>, <code>users@</code>, and <code>announce@</code> mailing lists.
-    A template is available <a href="templates/release-announce.html">here</a>.
-    The email needs to be sent from an <code>@apache.org</code> email address.</li>
-</ul>
-<p>Delete the prior version:</p>
-<div class="codehilite"><pre>svn delete https://dist.apache.org/repos/dist/release/sis/<span class="nv">$OLD_VERSION</span> <span class="se">\</span>
-    --message <span class="s2">&quot;Archive SIS-$OLD_VERSION after release of SIS-$NEW_VERSION.&quot;</span>
-</pre></div>
+## Recovering from a vetoed release    {#veto}
 
+Reply to the initial vote email and prepend to the original subject:
 
-<h1 id="next-release">Update master for the next development cycle<a class="headerlink" href="#next-release" title="Permanent link">&para;</a></h1>
-<p>On the development branch (usually JDK8),
-update the version numbers in the <code>pom.xml</code> files on master with the following command:</p>
-<div class="codehilite"><pre>mvn clean
-mvn release:update-versions --define <span class="nv">autoVersionSubmodules</span><span class="o">=</span><span class="nb">true</span>
-</pre></div>
+{{< highlight text >}}
+[CANCELED]
+{{< / highlight >}}
 
+Delete the svn tag created by the release:perform step:
 
-<p>This change will need to be merged manually on the JDK7 branch and on the master.
-Then on the development branch:</p>
-<ul>
-<li>Edit the version number in the <code>application/sis-console/src/main/artifact/README</code> file.</li>
-<li>Edit the value of the <code>MAJOR_VERSION</code> or <code>MINOR_VERSION</code> constant in the
-    <code>core/sis-utility/src/main/java/org/apache/sis/internal/system/Modules.java</code> file.</li>
-</ul>
-<h2 id="nexus-clean">Delete old artifacts on Maven snapshot repository<a class="headerlink" href="#nexus-clean" title="Permanent link">&para;</a></h2>
-<p>Login in the <a href="https://repository.apache.org/index.html">Nexus repository</a>. In the <em>Repositories</em> tag, select <em>Snapshots</em> of type <em>hosted</em>
-(not to be confused with <em>Snapshots</em> of type <em>group</em>). Navigate to the <code>org/apache/sis</code> directory and delete
-all directories starting with the old version number. The sub-directories need to be cleaned too.</p>
+{{< highlight bash >}}
+svn delete https://svn.apache.org/repos/asf/sis/tags/$NEW_VERSION --message "deleting tag from rolled back release"
+{{< / highlight >}}
+
+Drop the Nexus staging repository:
+
+* Go to [Nexus repository][repository] → _Build Promotion_ → _Staging repositories_ and search for `org.apache.sis` in the _Repository_ column.
+* Right click on the closed staging repositories (`org.apache.sis-<id>`) and select _Drop_.
+
+Make the required updates that caused the vote to be canceled during the release cycle.
+
+# Finalize the release    {#finalize}
+
+The artificats in the repository are not yet mirrored and available for Maven to download.
+Promote the staged Nexus artifacts, by releasing them.
+
+* Go to [Nexus repository][repository] → _Build Promotion_ → _Staging repositories_ and search for `org.apache.sis` in the _Repository_ column.
+* Click the checkboxes of the closed staging repositories (`org.apache.sis-<id>`) and press _Release_ in the menu bar.
+
+Check in the source and binary artifacts into distribution svn which will be pulled by all mirrors within 24 hours.
+The `dist/dev` svn is not mirrored, but the `dist/release` is.
+From any directory:
+
+{{< highlight bash >}}
+svn move https://dist.apache.org/repos/dist/dev/sis/$NEW_VERSION/RC$RELEASE_CANDIDATE \
+         https://dist.apache.org/repos/dist/release/sis/$NEW_VERSION \
+    --message "Committing SIS Source and Binary Release Candidate $RELEASE_CANDIDATE for SIS-$NEW_VERSION."
+
+svn delete https://dist.apache.org/repos/dist/dev/sis/$NEW_VERSION \
+    --message "Delete SIS $NEW_VERSION staging repository after release."
+{{< / highlight >}}
+
+Update [JIRA][JIRA]:
+
+* Update the JIRA versions to mark the version as "released".
+* Set the date to the date that the release was approved.
+* Prepare for the next release:
+  + Make a new release entry in JIRA for the next release.
+  + Update the [Roadmap](https://cwiki.apache.org/confluence/display/SIS/Roadmap) wiki page.
+
+## Verify release signatures    {#verify}
+
+Download all source and binary artifacts into a new directory, then execute in that directory:
+
+{{< highlight bash >}}
+find . -name "*.asc" -exec gpg --verify '{}' \;
+{{< / highlight >}}
+
+The output shall report only good signatures.
+
+## Announce the release    {#announce}
+
+* WAIT 24 hours after committing releases for mirrors to replicate.
+* Publish the web site updates:
+  + Login to the [ASF Content Management System][cms-admin].
+  + Click on _Publish sis site_.
+* Make an announcement about the release on the `dev@`, `users@`, and `announce@` mailing lists.
+  A template is available [here](templates/release-announce.html).
+  The email needs to be sent from an `@apache.org` email address.
+
+Delete the prior version:
+
+{{< highlight bash >}}
+svn delete https://dist.apache.org/repos/dist/release/sis/$OLD_VERSION \
+    --message "Archive SIS-$OLD_VERSION after release of SIS-$NEW_VERSION."
+{{< / highlight >}}
+
+# Update master for the next development cycle    {#next-release}
+
+On the development branch (usually JDK8),
+update the version numbers in the `pom.xml` files on master with the following command:
+
+{{< highlight bash >}}
+mvn clean
+mvn release:update-versions --define autoVersionSubmodules=true
+{{< / highlight >}}
+
+This change will need to be merged manually on the JDK7 branch and on the master.
+Then on the development branch:
+
+* Edit the version number in the `application/sis-console/src/main/artifact/README` file.
+* Edit the value of the `MAJOR_VERSION` or `MINOR_VERSION` constant in the
+  `core/sis-utility/src/main/java/org/apache/sis/internal/system/Modules.java` file.
+
+## Delete old artifacts on Maven snapshot repository    {#nexus-clean}
+
+Login in the [Nexus repository][repository]. In the _Repositories_ tag, select _Snapshots_ of type _hosted_
+(not to be confused with _Snapshots_ of type _group_). Navigate to the `org/apache/sis` directory and delete
+all directories starting with the old version number. The sub-directories need to be cleaned too.
+
+[release-faq]:      http://www.apache.org/dev/release.html
+[JIRA]:             http://issues.apache.org/jira/browse/SIS
+[cms-admin]:        https://cms.apache.org/sis/
+[repository]:       https://repository.apache.org/index.html

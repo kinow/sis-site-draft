@@ -2,345 +2,363 @@
 title: Questions fréquentes (FAQ)
 ---
 
-<p>Cette page liste quelques questions fréquemment posées à propos de Apache SIS.
-Son contenu est traduit de la <a href="faq.html">page de FAQ en anglais</a>.</p>
-<div class="toc">
-<ul>
-<li><a href="#referencing">Géoréférencement</a><ul>
-<li><a href="#referencing-intro">Pour bien commencer</a><ul>
-<li><a href="#transform-point">Comment transformer une coordonnée ?</a></li>
-<li><a href="#operation-methods">Quelles projections sont supportées ?</a></li>
-<li><a href="#axisOrder">Qu’est ce que le problème d’ordre des axes et comment est il abordé ?</a></li>
-</ul>
-</li>
-<li><a href="#crs">Systèmes de Référence des Coordonnées</a><ul>
-<li><a href="#UTM">Comment créer une projection de type Transverse Universelle de Mercator (UTM) ?</a></li>
-<li><a href="#google">Comment instancier une projection Google ?</a></li>
-<li><a href="#projectionKind">Comment puis-je identifier le type de projection d’un CRS ?</a></li>
-<li><a href="#lookupEPSG">Comment obtenir le code EPSG d’un CRS existant ?</a></li>
-<li><a href="#lookupURN">Comment obtenir l’URN « urn:ogc:def:crs:… » d’un CRS existant ?</a></li>
-<li><a href="#lookupReliability">Puis-je m’appuyer sur IdentifiedObjects.lookupEPSG(…) comme inverse de CRS.forCode(…) ?</a></li>
-<li><a href="#equalsIgnoreMetadata">Comment déterminer si deux CRS sont « fonctionnellement » égaux ?</a></li>
-<li><a href="#crsHashCode">Est-ce que les CRS sont utilisables comme clé dans un HashMap ?</a></li>
-</ul>
-</li>
-<li><a href="#transforms">Transformation de coordonnées</a><ul>
-<li><a href="#axisOrderInTransforms">Mes coordonnées transformées sont totalement fausses !</a></li>
-<li><a href="#projectionName">Les ordres des axes sont corrects mais les coordonnées transformées sont encore fausses.</a></li>
-<li><a href="#parameterUnits">J’ai juste utilisé le WKT d’une autorité connue et mes coordonnées transformées sont toujours fausses !</a></li>
-<li><a href="#BursaWolf">J’ai vérifié tous ce qui est ci-dessus et j’ai toujours une erreur d’environ un kilomètre.</a></li>
-<li><a href="#slightDifferences">J’obtiens des résultats légèrement différents d’un environnement d’exécution à l’autre.</a></li>
-<li><a href="#toWGS84">Puis-je présumer qu’il est toujours possible de transformer un CRS arbitraire vers WGS84 ?</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a href="#metadata">Métadonnées</a><ul>
-<li><a href="#metadata-implementation">Implementations sur mesures</a><ul>
-<li><a href="#metadata-proxy">Mes metadonnées sont stockées dans une forme de base de données. Implémenter toute les interfaces de GeoAPI est infaisable.</a></li>
-<li><a href="#metadata-unknownClass">Je n’arrive pas à écrire mon implémentation de metadonnée</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</div>
-<h1 id="referencing">Géoréférencement<a class="headerlink" href="#referencing" title="Permanent link">&para;</a></h1>
-<h2 id="referencing-intro">Pour bien commencer<a class="headerlink" href="#referencing-intro" title="Permanent link">&para;</a></h2>
-<h3 id="transform-point">Comment transformer une coordonnée ?<a class="headerlink" href="#transform-point" title="Permanent link">&para;</a></h3>
-<p>Le code java suivant projète une coordonnée de <em>World Geodetic System 1984</em> (WGS84) vers <em>WGS 84 / UTM zone 33N</em>.
-Afin de rendre cet exemple un peu plus simple, le code utilise des constantes prédéfinies dans la classe <code>CommonCRS</code>.
+Cette page liste quelques questions fréquemment posées à propos de Apache SIS.
+Son contenu est traduit de la [page de FAQ en anglais](faq.html).
+
+{{< toc >}}
+
+# Géoréférencement    {#referencing}
+
+## Pour bien commencer    {#referencing-intro}
+
+### Comment transformer une coordonnée ?    {#transform-point}
+
+Le code java suivant projète une coordonnée de _World Geodetic System 1984_ (WGS84) vers _WGS 84 / UTM zone 33N_.
+Afin de rendre cet exemple un peu plus simple, le code utilise des constantes prédéfinies dans la classe `CommonCRS`.
 Mais les applications plus avancées utilisent habituellement des codes EPSG à la place.
-Notez que les coordonnées ci-dessous sont en latitude puis longitude.</p>
-<div class="codehilite"><pre><span class="kn">import</span> <span class="nn">org.opengis.geometry.DirectPosition</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">org.opengis.referencing.crs.CoordinateReferenceSystem</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">org.opengis.referencing.operation.CoordinateOperation</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">org.opengis.referencing.operation.TransformException</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">org.opengis.util.FactoryException</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">org.apache.sis.referencing.CRS</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">org.apache.sis.referencing.CommonCRS</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">org.apache.sis.geometry.DirectPosition2D</span><span class="o">;</span>
+Notez que les coordonnées ci-dessous sont en latitude puis longitude.
 
-<span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyApp</span> <span class="o">{</span>
-<span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">FactoryException</span><span class="o">,</span> <span class="n">TransformException</span> <span class="o">{</span>
-<span class="n">CoordinateReferenceSystem</span> <span class="n">sourceCRS</span> <span class="o">=</span> <span class="n">CommonCRS</span><span class="o">.</span><span class="na">WGS84</span><span class="o">.</span><span class="na">geographic</span><span class="o">();</span>
-<span class="n">CoordinateReferenceSystem</span> <span class="n">targetCRS</span> <span class="o">=</span> <span class="n">CommonCRS</span><span class="o">.</span><span class="na">WGS84</span><span class="o">.</span><span class="na">universal</span><span class="o">(</span><span class="mi">40</span><span class="o">,</span> <span class="mi">14</span><span class="o">);</span>      <span class="c1">// Obtient la zone valide pour 14°E.</span>
-<span class="n">CoordinateOperation</span> <span class="n">operation</span> <span class="o">=</span> <span class="n">CRS</span><span class="o">.</span><span class="na">findOperation</span><span class="o">(</span><span class="n">sourceCRS</span><span class="o">,</span> <span class="n">targetCRS</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+{{< highlight java >}}
+import org.opengis.geometry.DirectPosition;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.operation.CoordinateOperation;
+import org.opengis.referencing.operation.TransformException;
+import org.opengis.util.FactoryException;
+import org.apache.sis.referencing.CRS;
+import org.apache.sis.referencing.CommonCRS;
+import org.apache.sis.geometry.DirectPosition2D;
 
-        <span class="c1">// Les lignes ci-dessus sont coûteuses et ne devraient être appelées qu’une fois pour un ensemble de points.</span>
-        <span class="c1">// Dans cet exemple, l’opération que l’on obtient est valide pour la zone géographique allant</span>
-        <span class="c1">// de 12°E à 18°E (UTM zone 33) et de 0°N à 84°N.</span>
+public class MyApp {
+    public static void main(String[] args) throws FactoryException, TransformException {
+        CoordinateReferenceSystem sourceCRS = CommonCRS.WGS84.geographic();
+        CoordinateReferenceSystem targetCRS = CommonCRS.WGS84.universal(40, 14);      // Obtient la zone valide pour 14°E.
+        CoordinateOperation operation = CRS.findOperation(sourceCRS, targetCRS, null);
 
-        <span class="n">DirectPosition</span> <span class="n">ptSrc</span> <span class="o">=</span> <span class="k">new</span> <span class="n">DirectPosition2D</span><span class="o">(</span><span class="mi">40</span><span class="o">,</span> <span class="mi">14</span><span class="o">);</span>           <span class="c1">// 40°N 14°E</span>
-        <span class="n">DirectPosition</span> <span class="n">ptDst</span> <span class="o">=</span> <span class="n">operation</span><span class="o">.</span><span class="na">getMathTransform</span><span class="o">().</span><span class="na">transform</span><span class="o">(</span><span class="n">ptSrc</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+        // Les lignes ci-dessus sont coûteuses et ne devraient être appelées qu’une fois pour un ensemble de points.
+        // Dans cet exemple, l’opération que l’on obtient est valide pour la zone géographique allant
+        // de 12°E à 18°E (UTM zone 33) et de 0°N à 84°N.
 
-        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Source: &quot;</span> <span class="o">+</span> <span class="n">ptSrc</span><span class="o">);</span>
-        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Target: &quot;</span> <span class="o">+</span> <span class="n">ptDst</span><span class="o">);</span>
-    <span class="o">}</span>
-<span class="o">}</span>
-</pre></div>
+        DirectPosition ptSrc = new DirectPosition2D(40, 14);           // 40°N 14°E
+        DirectPosition ptDst = operation.getMathTransform().transform(ptSrc, null);
 
+        System.out.println("Source: " + ptSrc);
+        System.out.println("Target: " + ptDst);
+    }
+}
+{{< / highlight >}}
 
-<h3 id="operation-methods">Quelles projections sont supportées ?<a class="headerlink" href="#operation-methods" title="Permanent link">&para;</a></h3>
-<p>Les formules supportées par Apache SIS (incluant les projections cartographiques, mais pas uniquement)
-sont listées sur la page <a href="tables/CoordinateOperationMethods.html">Coordinate Operation Methods</a>.
+### Quelles projections sont supportées ?    {#operation-methods}
+
+Les formules supportées par Apache SIS (incluant les projections cartographiques, mais pas uniquement)
+sont listées sur la page [Coordinate Operation Methods](tables/CoordinateOperationMethods.html).
 La quantité de formules de projection est relativement faible,
-mais la quantité de <em>Systèmes de Coordonées projetés</em> que l’on peut construire avec est considérable.
-Par exemple, avec seulement trois familles de formules (<em>Mercator Cylindrique</em>, <em>Mercator Transverse</em> et <em>Lambert Conforme Conique</em>),
-utilisées avec différents paramètres, on peut couvrir des milliers de projections listées dans la base EPSG.</p>
-<p>Afin d’utiliser une formule de projection, il est nécessaire de connaître les paramètres de la projection.
+mais la quantité de _Systèmes de Coordonées projetés_ que l’on peut construire avec est considérable.
+Par exemple, avec seulement trois familles de formules (_Mercator Cylindrique_, _Mercator Transverse_ et _Lambert Conforme Conique_),
+utilisées avec différents paramètres, on peut couvrir des milliers de projections listées dans la base EPSG.
+
+Afin d’utiliser une formule de projection, il est nécessaire de connaître les paramètres de la projection.
 Par soucis de facilité d’utilisation, des milliers de projections avec des paramètres pré-définis ont un identifiant unique.
 Une source bien connue de ces définitions est la base de données EPSG, mais il existe d’autres autorités.
 Les systèmes de coordonnées prédéfinis dans Apache SIS sont listés à la page
-<a href="tables/CoordinateReferenceSystems.html">Coordinate Reference Systems</a>.</p>
-<h3 id="axisOrder">Qu’est ce que le problème d’ordre des axes et comment est il abordé ?<a class="headerlink" href="#axisOrder" title="Permanent link">&para;</a></h3>
-<p>L’ordre des axes est spécifié par l’autorité (typiquement un organisme public) qui défini les Systèmes de Référence des Coordonnées (<abbr title="Coordinate Reference System">CRS</abbr>).
-L’ordre dépend du type de <abbr title="Coordinate Reference System">CRS</abbr> et du pays qui définit le <abbr title="Coordinate Reference System">CRS</abbr>.
-Dans le cas d’un <abbr title="Coordinate Reference System">CRS</abbr> géographique, l’ordre des axes (<em>latitude</em>, <em>longitude</em>) est largement répandu chez les géographes et les pilotes depuis des siècles.
-Toutefois certains développeurs de logiciels ont tendance à toujours utiliser l’ordre (<em>x</em>, <em>y</em>) pour tous les <abbr title="Coordinate Reference System">CRS</abbr>.
-Ces pratiques différentes ont conduit à des définitions contradictoires d’ordre des axes pour presque tous les <abbr title="Coordinate Reference System">CRS</abbr> de type <code>GeographicCRS</code>,
-pour certains <code>ProjectedCRS</code> de l’hémisphère sud (Afrique de sud, Australie, <em>etc.</em>) et pour certaines projections polaires entre autre.</p>
-<p>Pour chaque <abbr title="Coordinate Reference System">CRS</abbr> identifié par un code EPSG, l’ordre officiel des axes peut être vérifié avec
-le registre EPSG à l’adresse <a href="http://www.epsg-registry.org">http://www.epsg-registry.org</a>
+[Coordinate Reference Systems](tables/CoordinateReferenceSystems.html).
+
+### Qu’est ce que le problème d’ordre des axes et comment est il abordé ?    {#axisOrder}
+
+L’ordre des axes est spécifié par l’autorité (typiquement un organisme public) qui défini les Systèmes de Référence des Coordonnées (CRS).
+L’ordre dépend du type de {{< abbr title="Coordinate Reference System" text="CRS" >}} et du pays qui définit le {{< abbr title="Coordinate Reference System" text="CRS" >}}.
+Dans le cas d’un {{< abbr title="Coordinate Reference System" text="CRS" >}} géographique, l’ordre des axes (_latitude_, _longitude_) est largement répandu chez les géographes et les pilotes depuis des siècles.
+Toutefois certains développeurs de logiciels ont tendance à toujours utiliser l’ordre (_x_, _y_) pour tous les {{< abbr title="Coordinate Reference System" text="CRS" >}}.
+Ces pratiques différentes ont conduit à des définitions contradictoires d’ordre des axes pour presque tous les {{< abbr title="Coordinate Reference System" text="CRS" >}} de type `GeographicCRS`,
+pour certains `ProjectedCRS` de l’hémisphère sud (Afrique de sud, Australie, _etc._) et pour certaines projections polaires entre autre.
+
+Pour chaque {{< abbr title="Coordinate Reference System" text="CRS" >}} identifié par un code EPSG, l’ordre officiel des axes peut être vérifié avec
+le registre EPSG à l’adresse [https://epsg.org/](https://epsg.org/)
 (à ne pas confondre avec d’autres sites ayant « epsg » dans leur nom
 mais qui sont sans aucune relation avec l’organisme en charge des définitions EPSG) :
-Cliquez sur le lien <em>« Retrieve by code »</em> et entrez le code numérique.
-Cliquez ensuite sur le lien <em>« View »</em> de la partie droite
-et cliquez sur le symbole <em>« + »</em> à gauche de <em>« Axes »</em>.</p>
-<p>Les standards <abbr title="Open Geospatial Consortium">OGC</abbr> récents stipulent que l’ordre des axes est celui défini par l’autorité.
-Les standards <abbr title="Open Geospatial Consortium">OGC</abbr> plus anciens utilisaient l’ordre des axes (<em>x</em>, <em>y</em>), ignorant la définition de l’autorité.
-Parmi les standards <abbr title="Open Geospatial Consortium">OGC</abbr> obsolètes qui utilisent un ordre des axes non-conforme,
-l’un des plus influent est la version 1 de la spécification <em>Well Known Text</em> (WKT).
-Selon ce format très utilisé, les définitions WKT sans éléments <code>AXIS[…]</code>
-doivent par défaut être dans l’ordre (<em>longitude</em>, <em>latitude</em>) ou (<em>x</em>, <em>y</em>).
-Dans la version 2 du format WKT, les éléments <code>AXIS[…]</code> ne sont plus optionnels
-et doivent contenir explicitement le sous-élément <code>ORDER[…]</code> pour appuyer l’ordre des axes à appliquer.</p>
-<p>Beaucoup de logiciels utilisent toujours l’ancien ordre des axes (<em>x</em>, <em>y</em>), parfois parce qu’il est plus simple à implémenter.
-Mais Apache SIS suit l’ordre des axes <em>tel que défini par l’autorité</em> (à l’exception de la lecture de fichier WKT 1).
-Il permet toutefois de changer l’ordre des axes après la création d’un <abbr title="Coordinate Reference System">CRS</abbr>.
-Ce changement se fait avec le code suivant :</p>
-<div class="codehilite"><pre><span class="n">CoordinateReferenceSystem</span> <span class="n">crs</span> <span class="o">=</span> <span class="err">…</span><span class="o">;</span>             <span class="c1">// CRS obtenu de n’importe quelle façon.</span>
-<span class="n">crs</span> <span class="o">=</span> <span class="n">AbstractCRS</span><span class="o">.</span><span class="na">castOrCopy</span><span class="o">(</span><span class="n">crs</span><span class="o">).</span><span class="na">forConvention</span><span class="o">(</span><span class="n">AxesConvention</span><span class="o">.</span><span class="na">RIGHT_HANDED</span><span class="o">)</span>
-</pre></div>
+Cliquez sur le lien _« Retrieve by code »_ et entrez le code numérique.
+Cliquez ensuite sur le lien _« View »_ de la partie droite
+et cliquez sur le symbole _« + »_ à gauche de _« Axes »_.
 
+Les standards {{< abbr title="Open Geospatial Consortium" text="OGC" >}} récents stipulent que l’ordre des axes est celui défini par l’autorité.
+Les standards {{< abbr title="Open Geospatial Consortium" text="OGC" >}} plus anciens utilisaient l’ordre des axes (_x_, _y_), ignorant la définition de l’autorité.
+Parmi les standards {{< abbr title="Open Geospatial Consortium" text="OGC" >}} obsolètes qui utilisent un ordre des axes non-conforme,
+l’un des plus influent est la version 1 de la spécification _Well Known Text_ (WKT).
+Selon ce format très utilisé, les définitions WKT sans éléments `AXIS[...]`
+doivent par défaut être dans l’ordre (_longitude_, _latitude_) ou (_x_, _y_).
+Dans la version 2 du format WKT, les éléments `AXIS[...]` ne sont plus optionnels
+et doivent contenir explicitement le sous-élément `ORDER[...]` pour appuyer l’ordre des axes à appliquer.
 
-<h2 id="crs">Systèmes de Référence des Coordonnées<a class="headerlink" href="#crs" title="Permanent link">&para;</a></h2>
-<h3 id="UTM">Comment créer une projection de type Transverse Universelle de Mercator (UTM) ?<a class="headerlink" href="#UTM" title="Permanent link">&para;</a></h3>
-<p>Si la zone UTM n’est pas connue, une façon simple est d’utiliser la méthode <code>universal(…)</code> sur l’une des constantes de <code>CommonCRS</code>.
-Cette méthode prend en argument une coordonnées géographique en (<em>latitude</em>, <em>longitude</em>) et en calcule la zone UTM correspondante.
-Voir <a href="#transform-point">le code java ci-dessus</a>.</p>
-<p>Si la zone UTM est connue, une solution est d’utiliser la fabrique des autorités « EPSG » ou « AUTO ».
+Beaucoup de logiciels utilisent toujours l’ancien ordre des axes (_x_, _y_), parfois parce qu’il est plus simple à implémenter.
+Mais Apache SIS suit l’ordre des axes _tel que défini par l’autorité_ (à l’exception de la lecture de fichier WKT 1).
+Il permet toutefois de changer l’ordre des axes après la création d’un {{< abbr title="Coordinate Reference System" text="CRS" >}}.
+Ce changement se fait avec le code suivant :
+
+{{< highlight java >}}
+CoordinateReferenceSystem crs = ...;             // CRS obtenu de n’importe quelle façon.
+crs = AbstractCRS.castOrCopy(crs).forConvention(AxesConvention.RIGHT_HANDED)
+{{< / highlight >}}
+
+## Systèmes de Référence des Coordonnées    {#crs}
+
+### Comment créer une projection de type Transverse Universelle de Mercator (UTM) ?    {#UTM}
+
+Si la zone UTM n’est pas connue, une façon simple est d’utiliser la méthode `universal(...)` sur l’une des constantes de `CommonCRS`.
+Cette méthode prend en argument une coordonnées géographique en (_latitude_, _longitude_) et en calcule la zone UTM correspondante.
+Voir [le code java ci-dessus](#transform-point).
+
+Si la zone UTM est connue, une solution est d’utiliser la fabrique des autorités « EPSG » ou « AUTO ».
 Le code EPSG de certaines projections UTM peut être déterminé comme suit,
-où <em>zone</em> est un nombre de 1 à 60 inclusif (sauf spécifié autrement) :</p>
-<ul>
-<li>WGS 84 (northern hemisphère nord): 32600 + <em>zone</em></li>
-<li>WGS 84 (hemisphère sud): 32700 + <em>zone</em></li>
-<li>WGS 72 (hemisphère nord): 32200 + <em>zone</em></li>
-<li>WGS 72 (hemisphère sud): 32300 + <em>zone</em></li>
-<li>NAD 83 (hemisphère nord): 26900 + <em>zone</em> (zone de 1 à 23)</li>
-<li>NAD 27 (hemisphère nord): 26700 + <em>zone</em> (zone de 1 à 22)</li>
-</ul>
-<p>Notez que la liste ci-dessus est incomplète. Voir la base EPSG pour d’avantages de définitions UTM
-(WGS 72BE, SIRGAS 2000, SIRGAS 1995, SAD 69, ETRS 89, <em>etc.</em>, la plupart définissent quelques zones).
-Une fois que le code EPSG de la projection UTM est déterminé, le <abbr title="Coordinate Reference System">CRS</abbr> peut être obtenu comme dans l’exemple ci-dessous:</p>
-<div class="codehilite"><pre><span class="kt">int</span> <span class="n">code</span> <span class="o">=</span> <span class="mi">32600</span> <span class="o">+</span> <span class="n">zone</span><span class="o">;</span>    <span class="c1">// Pour l’hémisphère nord WGS84</span>
-<span class="n">CoordinateReferenceSystem</span> <span class="n">crs</span> <span class="o">=</span> <span class="n">CRS</span><span class="o">.</span><span class="na">forCode</span><span class="o">(</span><span class="s">&quot;EPSG:&quot;</span> <span class="o">+</span> <span class="n">code</span><span class="o">);</span>
-</pre></div>
+où _zone_ est un nombre de 1 à 60 inclusif (sauf spécifié autrement) :
 
+* WGS 84 (northern hemisphère nord): 32600 + _zone_
+* WGS 84 (hemisphère sud): 32700 + _zone_
+* WGS 72 (hemisphère nord): 32200 + _zone_
+* WGS 72 (hemisphère sud): 32300 + _zone_
+* NAD 83 (hemisphère nord): 26900 + _zone_ (zone de 1 à 23)
+* NAD 27 (hemisphère nord): 26700 + _zone_ (zone de 1 à 22)
 
-<h3 id="google">Comment instancier une projection Google ?<a class="headerlink" href="#google" title="Permanent link">&para;</a></h3>
-<p>La projection Google est une projection de Mercator qui prétend utiliser un référentiel WGS84
+Notez que la liste ci-dessus est incomplète. Voir la base EPSG pour d’avantages de définitions UTM
+(WGS 72BE, SIRGAS 2000, SIRGAS 1995, SAD 69, ETRS 89, _etc._, la plupart définissent quelques zones).
+Une fois que le code EPSG de la projection UTM est déterminé, le {{< abbr title="Coordinate Reference System" text="CRS" >}} peut être obtenu comme dans l’exemple ci-dessous:
+
+{{< highlight java >}}
+int code = 32600 + zone;    // Pour l’hémisphère nord WGS84
+CoordinateReferenceSystem crs = CRS.forCode("EPSG:" + code);
+{{< / highlight >}}
+
+### Comment instancier une projection Google ?    {#google}
+
+La projection Google est une projection de Mercator qui prétend utiliser un référentiel WGS84
 mais qui ignore la nature ellipsoïdale de ce référentiel et utilise un forme sphérique des formules à la place.
-Depuis la version 6.15 de la base EPSG, la façon privilégiée d’obtenir cette projection est d’utiliser la méthode <code>CRS.forCode("EPSG:3857")</code>.
-Il faut noter que l’usage de cette projection <strong>n’est pas</strong> recommandé, sauf pour des raisons de compatibilité.</p>
-<p>La définition de EPSG:3857 utilise une formule de projection nommée <em>« Popular Visualisation Pseudo Mercator »</em>.
+Depuis la version 6.15 de la base EPSG, la façon privilégiée d’obtenir cette projection est d’utiliser la méthode `CRS.forCode("EPSG:3857")`.
+Il faut noter que l’usage de cette projection **n’est pas** recommandé, sauf pour des raisons de compatibilité.
+
+La définition de EPSG:3857 utilise une formule de projection nommée _« Popular Visualisation Pseudo Mercator »_.
 La base EPSG propose aussi d’autres projections qui utilisent des formules sphériques.
-Ces méthodes ont le mot « (Spherical) » dans leur nom, par exemple <em>« Mercator (Spherical) »</em>
-(qui diffère de <em>« Popular Visualisation Pseudo Mercator »</em> par l’utilisation d’une sphère de rayon plus approprié).
-Ces formules de projections peuvent être utilisées dans les définitions <em>Well Known Text</em> (WKT).</p>
-<p>Il est possible d’utiliser une formule sphérique avec une projection qui n’a pas de contrepartie sphérique
-en déclarant explicitement les paramètres <code>"semi_major"</code> et <code>"semi_minor"</code> dans la définition WKT.
-Ces paramètres sont généralement déduit du référentiel, mais Apache SIS autorise les déclarations à surcharger ces valeurs.</p>
-<h3 id="projectionKind">Comment puis-je identifier le type de projection d’un <abbr title="Coordinate Reference System">CRS</abbr> ?<a class="headerlink" href="#projectionKind" title="Permanent link">&para;</a></h3>
-<p>Le terme « type de projection » (Mercator, Lambert Conformal, <em>etc.</em>) est appelé <em>Operation Method</em> dans la terminologie <abbr title="International Organization for Standardization">ISO</abbr> 19111.
-Une approche possible est de vérifier la valeur de <code>OperationMethod.getName()</code> et de comparer avec les noms <abbr title="Open Geospatial Consortium">OGC</abbr> et EPSG
-listés à la page <a href="tables/CoordinateOperationMethods.html">Coordinate Operation Methods</a>.</p>
-<h3 id="lookupEPSG">Comment obtenir le code EPSG d’un <abbr title="Coordinate Reference System">CRS</abbr> existant ?<a class="headerlink" href="#lookupEPSG" title="Permanent link">&para;</a></h3>
-<p>La propriété <em>identifiant</em> d’un <abbr title="Coordinate Reference System">CRS</abbr> peut être obtenue par la méthode <code>getIdentifiers()</code>
+Ces méthodes ont le mot « (Spherical) » dans leur nom, par exemple _« Mercator (Spherical) »_
+(qui diffère de _« Popular Visualisation Pseudo Mercator »_ par l’utilisation d’une sphère de rayon plus approprié).
+Ces formules de projections peuvent être utilisées dans les définitions _Well Known Text_ (WKT).
+
+Il est possible d’utiliser une formule sphérique avec une projection qui n’a pas de contrepartie sphérique
+en déclarant explicitement les paramètres `"semi_major"` et `"semi_minor"` dans la définition WKT.
+Ces paramètres sont généralement déduit du référentiel, mais Apache SIS autorise les déclarations à surcharger ces valeurs.
+
+### Comment puis-je identifier le type de projection d’un CRS ?    {#projectionKind}
+
+Le terme « type de projection » (Mercator, Lambert Conformal, _etc._) est appelé _Operation Method_ dans la terminologie {{< abbr title="International Organization for Standardization" text="ISO" >}} 19111.
+Une approche possible est de vérifier la valeur de `OperationMethod.getName()` et de comparer avec les noms {{< abbr title="Open Geospatial Consortium" text="OGC" >}} et EPSG
+listés à la page [Coordinate Operation Methods](tables/CoordinateOperationMethods.html).
+
+### Comment obtenir le code EPSG d’un CRS existant ?    {#lookupEPSG}
+
+La propriété _identifiant_ d’un {{< abbr title="Coordinate Reference System" text="CRS" >}} peut être obtenue par la méthode `getIdentifiers()`
 qui retourne une collection de zéro ou un élément.
-Si le <abbr title="Coordinate Reference System">CRS</abbr> a été créé à partir d’un <em>Well Known Text</em> (WKT)
-et que le WKT se termine avec un élément <code>AUTHORITY["EPSG", "xxxx"]</code> (WKT version 1) ou <code>ID["EPSG", xxxx]</code> (WKT version 2,
-alors l’identifiant (un code numérique EPSG dans cet exemple) sera le <em>xxxx</em> de cet élément.
-Si le <abbr title="Coordinate Reference System">CRS</abbr> a été créé à partir de la base EPSG (par exemple avec l’appelle à <code>CRS.forCode("EPSG:xxxx")</code>),
-alors l’identifiant est le code <em>xxxx</em> donné à la méthode.
-Si le <abbr title="Coordinate Reference System">CRS</abbr> a été créé d’une autre façon, alors la collection retournée par la méthode <code>getIdentifiers()</code>
-pourra être vide dans le cas où le programme qui a créé le <abbr title="Coordinate Reference System">CRS</abbr> a aussi pris la responsabilité de fournir les identifiants.</p>
-<p>Si la collection d’identifiants est vide, la méthode la plus efficace de le corriger est de s’assurer que le WKT
-contient un élément <code>AUTHORITY</code> ou <code>ID</code> (en supposant que le <abbr title="Coordinate Reference System">CRS</abbr> vient d’un WKT).
-Si ce n’est pas possible, alors la classe <code>org.​apache.​sis.​referencing.​IdentifiedObjects</code> contient des méthodes utilitaires qui peuvent aider
-Dans l’exemple suivant, l’appel à <code>lookupEPSG(…)</code> va parcourir la base EPSG pour un <abbr title="Coordinate Reference System">CRS</abbr> équivalent (en ignorant les métadonnées).
-<em>Attention, cette recherche est sensible à l’ordre des axes.</em>
-La plupart des <abbr title="Coordinate Reference System">CRS</abbr> géographiques de la base EPSG sont déclarés avec l’ordre des axes (<em>latitude</em>, <em>longitude</em>).
-En conséquence, si le <abbr title="Coordinate Reference System">CRS</abbr> possède un ordre des axes (<em>longitude</em>, <em>latitude</em>), la recherche a toutes les chances de ne pas trouver de résultats.</p>
-<div class="codehilite"><pre><span class="n">CoordinateReferenceSystem</span> <span class="n">myCRS</span> <span class="o">=</span> <span class="err">…</span><span class="o">;</span>
-<span class="n">Integer</span> <span class="n">identifier</span> <span class="o">=</span> <span class="n">IdentifiedObjects</span><span class="o">.</span><span class="na">lookupEPSG</span><span class="o">(</span><span class="n">myCRS</span><span class="o">);</span>
-<span class="k">if</span> <span class="o">(</span><span class="n">identifier</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Le code EPSG a été trouvé : &quot;</span> <span class="o">+</span> <span class="n">identifier</span><span class="o">);</span>
-<span class="o">}</span>
-</pre></div>
+Si le {{< abbr title="Coordinate Reference System" text="CRS" >}} a été créé à partir d’un _Well Known Text_ (WKT)
+et que le WKT se termine avec un élément `AUTHORITY["EPSG", "xxxx"]` (WKT version 1) ou `ID["EPSG", xxxx]` (WKT version 2,
+alors l’identifiant (un code numérique EPSG dans cet exemple) sera le _xxxx_ de cet élément.
+Si le {{< abbr title="Coordinate Reference System" text="CRS" >}} a été créé à partir de la base EPSG (par exemple avec l’appelle à `CRS.forCode("EPSG:xxxx")`),
+alors l’identifiant est le code _xxxx_ donné à la méthode.
+Si le {{< abbr title="Coordinate Reference System" text="CRS" >}} a été créé d’une autre façon, alors la collection retournée par la méthode `getIdentifiers()`
+pourra être vide dans le cas où le programme qui a créé le {{< abbr title="Coordinate Reference System" text="CRS" >}} a aussi pris la responsabilité de fournir les identifiants.
 
+Si la collection d’identifiants est vide, la méthode la plus efficace de le corriger est de s’assurer que le WKT
+contient un élément `AUTHORITY` ou `ID` (en supposant que le {{< abbr title="Coordinate Reference System" text="CRS" >}} vient d’un WKT).
+Si ce n’est pas possible, alors la classe `org.​apache.​sis.​referencing.​IdentifiedObjects` contient des méthodes utilitaires qui peuvent aider
+Dans l’exemple suivant, l’appel à `lookupEPSG(...)` va parcourir la base EPSG pour un {{< abbr title="Coordinate Reference System" text="CRS" >}} équivalent (en ignorant les métadonnées).
+*Attention, cette recherche est sensible à l’ordre des axes.*
+La plupart des {{< abbr title="Coordinate Reference System" text="CRS" >}} géographiques de la base EPSG sont déclarés avec l’ordre des axes (_latitude_, _longitude_).
+En conséquence, si le {{< abbr title="Coordinate Reference System" text="CRS" >}} possède un ordre des axes (_longitude_, _latitude_), la recherche a toutes les chances de ne pas trouver de résultats.
 
-<h3 id="lookupURN">Comment obtenir l’URN « urn:ogc:def:crs:… » d’un <abbr title="Coordinate Reference System">CRS</abbr> existant ?<a class="headerlink" href="#lookupURN" title="Permanent link">&para;</a></h3>
-<p>L’<abbr title="Open Geospatial Consortium">OGC</abbr> définit les URN pour les identifiants de <abbr title="Coordinate Reference System">CRS</abbr>, par exemple <code>"urn:​ogc:​def:​crs:​epsg:​7.1:​4326"</code>
-avec <code>"7.1"</code> comme version de la base EPSG utilisée.
-Les URN peuvent ou non être présentes dans la collection d’identifiants retournée par <code>crs.getIdentifiers()</code>.
-Dans beaucoup de cas (principalement quand le <abbr title="Coordinate Reference System">CRS</abbr> provient d’un <em>Well Known Text</em>), seul des identifiants simples comme <code>"EPSG:​4326"</code> sont présents.
+{{< highlight java >}}
+CoordinateReferenceSystem myCRS = ...;
+Integer identifier = IdentifiedObjects.lookupEPSG(myCRS);
+if (identifier != null) {
+    System.out.println("Le code EPSG a été trouvé : " + identifier);
+}
+{{< / highlight >}}
+
+### Comment obtenir l’URN « urn:ogc:def:crs:... » d’un CRS existant ?    {#lookupURN}
+
+L’{{< abbr title="Open Geospatial Consortium" text="OGC" >}} définit les URN pour les identifiants de {{< abbr title="Coordinate Reference System" text="CRS" >}}, par exemple `"urn:​ogc:​def:​crs:​epsg:​7.1:​4326"`
+avec `"7.1"` comme version de la base EPSG utilisée.
+Les URN peuvent ou non être présentes dans la collection d’identifiants retournée par `crs.getIdentifiers()`.
+Dans beaucoup de cas (principalement quand le {{< abbr title="Coordinate Reference System" text="CRS" >}} provient d’un _Well Known Text_), seul des identifiants simples comme `"EPSG:​4326"` sont présents.
 Une façon simple de construire une URN complète est d’utiliser le code ci-dessous.
-Cet exemple peut avoir à parcourir la base EPSG afin de trouver les informations qui n’apparaissent pas explicitement dans <code>myCRS</code>.</p>
-<div class="codehilite"><pre><span class="n">CoordinateReferenceSystem</span> <span class="n">myCRS</span> <span class="o">=</span> <span class="err">…</span><span class="o">;</span>
-<span class="n">String</span> <span class="n">urn</span> <span class="o">=</span> <span class="n">IdentifiedObjects</span><span class="o">.</span><span class="na">lookupURN</span><span class="o">(</span><span class="n">myCRS</span><span class="o">);</span>
-</pre></div>
+Cet exemple peut avoir à parcourir la base EPSG afin de trouver les informations qui n’apparaissent pas explicitement dans `myCRS`.
 
+{{< highlight java >}}
+CoordinateReferenceSystem myCRS = ...;
+String urn = IdentifiedObjects.lookupURN(myCRS);
+{{< / highlight >}}
 
-<h3 id="lookupReliability">Puis-je m’appuyer sur IdentifiedObjects.lookupEPSG(…) comme inverse de <abbr title="Coordinate Reference System">CRS</abbr>.forCode(…) ?<a class="headerlink" href="#lookupReliability" title="Permanent link">&para;</a></h3>
-<p>Pour les <abbr title="Coordinate Reference System">CRS</abbr> créés avec la base EPSG, en général oui.
-À noter toutefois que <code>IdentifiedObjects.getIdentifier(…)</code> est moins riche et insensible aux détails de la définition du <abbr title="Coordinate Reference System">CRS</abbr>
-car il n’interroge pas la base de données EPSG. Il marche uniquement si le <abbr title="Coordinate Reference System">CRS</abbr> déclare explicitement son code
-ce qui est le cas des <abbr title="Coordinate Reference System">CRS</abbr> créés à partir de la base EPSG ou lus à partir d’un <em>Well Known Text</em> (WKT) avec un élément <code>AUTHORITY</code> ou <code>ID</code>.
-La méthode <code>lookupEPSG(…)</code> à l’inverse est plus robuste contre les erreurs de déclaration de code car elle compare toujours le <abbr title="Coordinate Reference System">CRS</abbr> avec celui de la base.
+### Puis-je m’appuyer sur IdentifiedObjects.lookupEPSG(...) comme inverse de CRS.forCode(...) ?   {#lookupReliability}
+
+Pour les {{< abbr title="Coordinate Reference System" text="CRS" >}} créés avec la base EPSG, en général oui.
+À noter toutefois que `IdentifiedObjects.getIdentifier(...)` est moins riche et insensible aux détails de la définition du {{< abbr title="Coordinate Reference System" text="CRS" >}}
+car il n’interroge pas la base de données EPSG. Il marche uniquement si le {{< abbr title="Coordinate Reference System" text="CRS" >}} déclare explicitement son code
+ce qui est le cas des {{< abbr title="Coordinate Reference System" text="CRS" >}} créés à partir de la base EPSG ou lus à partir d’un _Well Known Text_ (WKT) avec un élément `AUTHORITY` ou `ID`.
+La méthode `lookupEPSG(...)` à l’inverse est plus robuste contre les erreurs de déclaration de code car elle compare toujours le {{< abbr title="Coordinate Reference System" text="CRS" >}} avec celui de la base.
 Elle peut échouer s’il y a une légère différence (par exemple d’arrondie dans les paramètres)
-entre le <abbr title="Coordinate Reference System">CRS</abbr> fourni et le <abbr title="Coordinate Reference System">CRS</abbr> trouvé dans la base de données.</p>
-<h3 id="equalsIgnoreMetadata">Comment déterminer si deux <abbr title="Coordinate Reference System">CRS</abbr> sont « fonctionnellement » égaux ?<a class="headerlink" href="#equalsIgnoreMetadata" title="Permanent link">&para;</a></h3>
-<p>Deux <abbr title="Coordinate Reference System">CRS</abbr> peuvent ne pas être considérés égaux s’ils sont associés à des métadonnées différentes
-(nom, identifiant, domaine d’usage, domaine de validité, remarque), même s’ils représentent mathématiquement le même <abbr title="Coordinate Reference System">CRS</abbr>.
-Afin de tester si deux <abbr title="Coordinate Reference System">CRS</abbr> sont fonctionnellement équivalents, utilisez la méthode <code>Utilities​.equalsIgnoreMetadata(myFirstCRS, mySecondCRS)</code>.</p>
-<h3 id="crsHashCode">Est-ce que les <abbr title="Coordinate Reference System">CRS</abbr> sont utilisables comme clé dans un HashMap ?<a class="headerlink" href="#crsHashCode" title="Permanent link">&para;</a></h3>
-<p>Oui, toutes les classes définies dans les paquets <code>org.apache.sis.referencing.crs</code>, <code>cs</code> et <code>datum</code>
-définissent leurs propres méthodes <code>equals(Object)</code> et <code>hashCode()</code>.
-La bibliothèque Apache SIS utilise elle-même les objets <abbr title="Coordinate Reference System">CRS</abbr> dans des <code>Map</code> à des fins de cache.</p>
-<h2 id="transforms">Transformation de coordonnées<a class="headerlink" href="#transforms" title="Permanent link">&para;</a></h2>
-<h3 id="axisOrderInTransforms">Mes coordonnées transformées sont totalement fausses !<a class="headerlink" href="#axisOrderInTransforms" title="Permanent link">&para;</a></h3>
-<p>Ce cas se produit principalement à cause des ordonnées données dans le mauvais ordre.
-Les développeurs ont tendance à présumer que l’ordre des  axes est (<em>x</em>, <em>y</em>) ou (<em>longitude</em>, <em>latitude</em>)
-mais les géographes et pilotes utilisent l’ordre (<em>latitude</em>, <em>longitude</em>) depuis des siècles
+entre le {{< abbr title="Coordinate Reference System" text="CRS" >}} fourni et le {{< abbr title="Coordinate Reference System" text="CRS" >}} trouvé dans la base de données.
+
+### Comment déterminer si deux CRS sont « fonctionnellement » égaux ?  {#equalsIgnoreMetadata}
+
+Deux {{< abbr title="Coordinate Reference System" text="CRS" >}} peuvent ne pas être considérés égaux s’ils sont associés à des métadonnées différentes
+(nom, identifiant, domaine d’usage, domaine de validité, remarque), même s’ils représentent mathématiquement le même {{< abbr title="Coordinate Reference System" text="CRS" >}}.
+Afin de tester si deux {{< abbr title="Coordinate Reference System" text="CRS" >}} sont fonctionnellement équivalents, utilisez la méthode `Utilities​.equalsIgnoreMetadata(myFirstCRS, mySecondCRS)`.
+
+### Est-ce que les CRS sont utilisables comme clé dans un HashMap ?    {#crsHashCode}
+
+Oui, toutes les classes définies dans les paquets `org.apache.sis.referencing.crs`, `cs` et `datum`
+définissent leurs propres méthodes `equals(Object)` et `hashCode()`.
+La bibliothèque Apache SIS utilise elle-même les objets {{< abbr title="Coordinate Reference System" text="CRS" >}} dans des `Map` à des fins de cache.
+
+## Transformation de coordonnées   {#transforms}
+
+### Mes coordonnées transformées sont totalement fausses !    {#axisOrderInTransforms}
+
+Ce cas se produit principalement à cause des ordonnées données dans le mauvais ordre.
+Les développeurs ont tendance à présumer que l’ordre des  axes est (_x_, _y_) ou (_longitude_, _latitude_)
+mais les géographes et pilotes utilisent l’ordre (_latitude_, _longitude_) depuis des siècles
 et la base de données EPSG définit les systèmes de coordonnées de cette façon.
 Si une transformation de coordonnées semble produire des valeurs complètement fausses,
-la première chose à faire est d’afficher les <abbr title="Coordinate Reference System">CRS</abbr> source et cible :</p>
-<div class="codehilite"><pre><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">sourceCRS</span><span class="o">);</span>
-<span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">targetCRS</span><span class="o">);</span>
-</pre></div>
+la première chose à faire est d’afficher les {{< abbr title="Coordinate Reference System" text="CRS" >}} source et cible :
 
+{{< highlight java >}}
+System.out.println(sourceCRS);
+System.out.println(targetCRS);
+{{< / highlight >}}
 
-<p>Une attention particulière doit être portée à l’ordre des éléments <code>AXIS</code>.
-Dans l’exemple ci-dessous, le <abbr title="Coordinate Reference System">CRS</abbr> stipule clairement l’ordre (<em>latitude</em>, <em>longitude</em>) :</p>
-<div class="codehilite"><pre>GeodeticCRS[&quot;WGS 84&quot;,
-  Datum[&quot;World Geodetic System 1984&quot;,
-    Ellipsoid[&quot;WGS 84&quot;, 6378137.0, 298.257223563]],
+Une attention particulière doit être portée à l’ordre des éléments `AXIS`.
+Dans l’exemple ci-dessous, le {{< abbr title="Coordinate Reference System" text="CRS" >}} stipule clairement l’ordre (_latitude_, _longitude_) :
+
+{{< highlight text >}}
+GeodeticCRS["WGS 84",
+  Datum["World Geodetic System 1984",
+    Ellipsoid["WGS 84", 6378137.0, 298.257223563]],
   CS[ellipsoidal, 2],
-    Axis[&quot;Geodetic latitude (Lat)&quot;, north],
-    Axis[&quot;Geodetic longitude (Lon)&quot;, east],
-    Unit[&quot;degree&quot;, 0.017453292519943295]]
-</pre></div>
+    Axis["Geodetic latitude (Lat)", north],
+    Axis["Geodetic longitude (Lon)", east],
+    Unit["degree", 0.017453292519943295]]
+{{< / highlight >}}
 
+Si l’ordre (_longitude_, _latitude_) est voulu, Apache SIS est capable de le forcer comme décrit [ci-dessus](#axisOrder).
 
-<p>Si l’ordre (<em>longitude</em>, <em>latitude</em>) est voulu, Apache SIS est capable de le forcer comme décrit <a href="#axisOrder">ci-dessus</a>.</p>
-<h3 id="projectionName">Les ordres des axes sont corrects mais les coordonnées transformées sont encore fausses.<a class="headerlink" href="#projectionName" title="Permanent link">&para;</a></h3>
-<p>Vérifiez que se sont les bonnes projections qui sont utilisées. Certains noms sont déroutants.
-Par exemple <em>« Oblique Mercator »</em> et <em>« Hotine Oblique Mercator »</em> (dans l’autorité EPSG) sont deux projections différentes.
-Mais <em>« Oblique Mercator »</em> (sans le Hotine) de l’autorité EPSG est aussi appelée <em>« Hotine Oblique Mercator Azimuth Center »</em> par ESRI.
-tandis que <em>« Hotine Oblique Mercator »</em> (de l’autorité EPSG) est appelée <em>« Hotine Oblique Mercator Azimuth Natural Origin »</em> par ESRI.</p>
-<p>La projection <em>« Oblique Stereographic »</em> (de l’autorité EPSG) est appelée <em>« Double Stereographic »</em> par ESRI.
-ESRI définit aussi une projection <em>« Stereographic »</em> qui est en réalité une projection oblique comme la précédente mais avec des formules différentes.</p>
-<h3 id="parameterUnits">J’ai juste utilisé le WKT d’une autorité connue et mes coordonnées transformées sont toujours fausses !<a class="headerlink" href="#parameterUnits" title="Permanent link">&para;</a></h3>
-<p>La spécification <em>Well Known Text</em> (WKT) a été interprétée de différentes façons en fonction des implémentations logicielles.
+### Les ordres des axes sont corrects mais les coordonnées transformées sont encore fausses.  {#projectionName}
+
+Vérifiez que se sont les bonnes projections qui sont utilisées. Certains noms sont déroutants.
+Par exemple _« Oblique Mercator »_ et _« Hotine Oblique Mercator »_ (dans l’autorité EPSG) sont deux projections différentes.
+Mais _« Oblique Mercator »_ (sans le Hotine) de l’autorité EPSG est aussi appelée _« Hotine Oblique Mercator Azimuth Center »_ par ESRI.
+tandis que _« Hotine Oblique Mercator »_ (de l’autorité EPSG) est appelée _« Hotine Oblique Mercator Azimuth Natural Origin »_ par ESRI.
+
+La projection _« Oblique Stereographic »_ (de l’autorité EPSG) est appelée _« Double Stereographic »_ par ESRI.
+ESRI définit aussi une projection _« Stereographic »_ qui est en réalité une projection oblique comme la précédente mais avec des formules différentes.
+
+### J’ai juste utilisé le WKT d’une autorité connue et mes coordonnées transformées sont toujours fausses !    {#parameterUnits}
+
+La spécification _Well Known Text_ (WKT) a été interprétée de différentes façons en fonction des implémentations logicielles.
 Un problème subtil vient des unités d’angles pour le méridien d’origine et les paramètres de projection.
-La spécification WKT 1 stipule clairement : <em>« Si l’élément <code>PRIMEM</code> apparaît dans <code>GEOGCS</code>,
-alors l’unité des longitudes doit correspondre à celle du système de coordonnées géographiques »</em> (traduction libre de <abbr title="Open Geospatial Consortium">OGC</abbr> 01-009).
+La spécification WKT 1 stipule clairement : _« Si l’élément `PRIMEM` apparaît dans `GEOGCS`,
+alors l’unité des longitudes doit correspondre à celle du système de coordonnées géographiques »_ (traduction libre de {{< abbr title="Open Geospatial Consortium" text="OGC" >}} 01-009).
 Toutefois ESRI et GDAL entres autres utilisent inconditionnellement des degrés décimaux, ignorant cette partie de la spécification WKT.
-Ce problème peut être identifié en inspectant l’extrait de WKT suivant :</p>
-<div class="codehilite"><pre>PROJCS[&quot;Lambert II étendu&quot;,
-  GEOGCS[&quot;Nouvelle Triangulation Française&quot;, …,
-    PRIMEM[&quot;Paris&quot;, 2.337229167],
-    UNIT[&quot;grad&quot;, 0.01570796326794897]]
-  PROJECTION[&quot;Lambert_Conformal_Conic_1SP&quot;],
-  PARAMETER[&quot;latitude_of_origin&quot;, 46.8], …]
-</pre></div>
+Ce problème peut être identifié en inspectant l’extrait de WKT suivant :
 
+{{< highlight text >}}
+PROJCS["Lambert II étendu",
+  GEOGCS["Nouvelle Triangulation Française", ...,
+    PRIMEM["Paris", 2.337229167],
+    UNIT["grad", 0.01570796326794897]]
+  PROJECTION["Lambert_Conformal_Conic_1SP"],
+  PARAMETER["latitude_of_origin", 46.8], ...]
+{{< / highlight >}}
 
-<p>Le méridien d’origine de Paris est situé à approximativement 2,597 gradians de Greenwich, ce qui correspond à 2,337 degrés.
-À partir de ce fait, on peut voir que le WKT ci-dessus utilise des degrés malgré la déclaration de l’unité <code>UNIT["grad"]</code>.
+Le méridien d’origine de Paris est situé à approximativement 2,597 gradians de Greenwich, ce qui correspond à 2,337 degrés.
+À partir de ce fait, on peut voir que le WKT ci-dessus utilise des degrés malgré la déclaration de l’unité `UNIT["grad"]`.
 Cette erreur s’applique aussi aux valeurs des paramètres, qui déclarent 46,8° dans l’exemple ci-dessus alors que la valeur officielle est de 52 gradians.
 Par défaut, Apache SIS interprète ces valeurs angulaires en gradians quand il lit ce type de WKT, ce qui produit de grandes erreurs.
-Afin d’obtenir le résultat attendu, il est possible de :</p>
-<ul>
-<li>
-<p>Remplacer <code>UNIT["grad", 0.01570796326794897]</code> par <code>UNIT["degree", 0.017453292519943295]</code>,
-    ce qui va assurer que Apache SIS, GDAL et ESRI comprennent ce WKT de la même manière.</p>
-</li>
-<li>
-<p>Ou demander explicitement à Apache SIS de lire le WKT en utilisant les conventions ESRI ou GDAL,
-    avec l’énumération <code>Convention.​WKT1_COMMON_UNITS</code> pour la valeur de <code>WKTFormat</code> dans le paquet <code>org.​apache.​sis.​io.​wkt</code>.</p>
-</li>
-</ul>
-<p>Il est à noter que le standard GeoPackage requiert explicitement la conformité avec <abbr title="Open Geospatial Consortium">OGC</abbr> 01-009
-et que le nouveau standard WKT 2 suit aussi l’interprétation de <abbr title="Open Geospatial Consortium">OGC</abbr> 01-009.
-Le comportement par défaut de Apache SIS est cohérent avec ces deux standards.</p>
-<h3 id="BursaWolf">J’ai vérifié tous ce qui est ci-dessus et j’ai toujours une erreur d’environ un kilomètre.<a class="headerlink" href="#BursaWolf" title="Permanent link">&para;</a></h3>
-<p>Les systèmes de coordonnées (<abbr title="Coordinate Reference System">CRS</abbr>) font une approximation de la forme de la terre avec une ellipsoïde.
-Différentes ellipsoïdes (en réalité différents <em>référentiels</em>) sont utilisées dans différents pays du monde et à différents moments de l’histoire.
-Quand on transforme des coordonnées entre deux <abbr title="Coordinate Reference System">CRS</abbr> utilisant le même référentiel, aucun paramètre Bursa-Wolf n’est requis.
-Mais quand la transformation implique un changement de référentiel, le module de géoréférencement à besoin d’informations sur la manière d’effectuer ce changement.</p>
-<p>Il y a plusieurs façon de spécifier comment appliquer un changement de référentiel, et la plupart sont seulement approximatives.
+Afin d’obtenir le résultat attendu, il est possible de :
+
+* Remplacer `UNIT["grad", 0.01570796326794897]` par `UNIT["degree", 0.017453292519943295]`,
+  ce qui va assurer que Apache SIS, GDAL et ESRI comprennent ce WKT de la même manière.
+
+* Ou demander explicitement à Apache SIS de lire le WKT en utilisant les conventions ESRI ou GDAL,
+  avec l’énumération `Convention.​WKT1_COMMON_UNITS` pour la valeur de `WKTFormat` dans le paquet `org.​apache.​sis.​io.​wkt`.
+
+Il est à noter que le standard GeoPackage requiert explicitement la conformité avec {{< abbr title="Open Geospatial Consortium" text="OGC" >}} 01-009
+et que le nouveau standard WKT 2 suit aussi l’interprétation de {{< abbr title="Open Geospatial Consortium" text="OGC" >}} 01-009.
+Le comportement par défaut de Apache SIS est cohérent avec ces deux standards.
+
+### J’ai vérifié tous ce qui est ci-dessus et j’ai toujours une erreur d’environ un kilomètre. {#BursaWolf}
+
+Les systèmes de coordonnées (CRS) font une approximation de la forme de la terre avec une ellipsoïde.
+Différentes ellipsoïdes (en réalité différents _référentiels_) sont utilisées dans différents pays du monde et à différents moments de l’histoire.
+Quand on transforme des coordonnées entre deux {{< abbr title="Coordinate Reference System" text="CRS" >}} utilisant le même référentiel, aucun paramètre Bursa-Wolf n’est requis.
+Mais quand la transformation implique un changement de référentiel, le module de géoréférencement à besoin d’informations sur la manière d’effectuer ce changement.
+
+Il y a plusieurs façon de spécifier comment appliquer un changement de référentiel, et la plupart sont seulement approximatives.
 La méthode de Bursa-Wolf est l’une d’elle, mais pas la seule. Toutefois elle est une des plus fréquemment utilisées.
-Les paramètres Bursa-Wolf peuvent être spécifiés à l’intérieur de l’élément <code>TOWGS84</code> de la version 1 du format <em>Well Known Text</em> (WKT),
-ou dans l’élément <code>BOUNDCRS</code> avec la version 2 du format WKT.
-Si le <abbr title="Coordinate Reference System">CRS</abbr> est lu à partir d’une chaine WKT, assurez-vous qu’elle contient l’élément approprié.</p>
-<h3 id="slightDifferences">J’obtiens des résultats légèrement différents d’un environnement d’exécution à l’autre.<a class="headerlink" href="#slightDifferences" title="Permanent link">&para;</a></h3>
-<p>Les résultats de transformations de coordonnées quand on lance l’application dans un conteneur web (type JBoss, <em>etc.</em>)
-peuvent avoir quelques mètres de différence avec la transformation exécutée dans un IDE (NetBeans, Eclipse, <em>etc.</em>).
+Les paramètres Bursa-Wolf peuvent être spécifiés à l’intérieur de l’élément `TOWGS84` de la version 1 du format _Well Known Text_ (WKT),
+ou dans l’élément `BOUNDCRS` avec la version 2 du format WKT.
+Si le {{< abbr title="Coordinate Reference System" text="CRS" >}} est lu à partir d’une chaine WKT, assurez-vous qu’elle contient l’élément approprié.
+
+### J’obtiens des résultats légèrement différents d’un environnement d’exécution à l’autre.   {#slightDifferences}
+
+Les résultats de transformations de coordonnées quand on lance l’application dans un conteneur web (type JBoss, _etc._)
+peuvent avoir quelques mètres de différence avec la transformation exécutée dans un IDE (NetBeans, Eclipse, _etc._).
 Les résultats dépendent de la présence de la fabrique EPSG dans le chemin de classes (classpath),
-<strong>peu importe comment le <abbr title="Coordinate Reference System">CRS</abbr> a été créé</strong>, parce-que la fabrique EPSG spécifie explicitement l’opération à appliquer pour certaines paires de <abbr title="Coordinate Reference System">CRS</abbr>.
+**peu importe comment le {{< abbr title="Coordinate Reference System" text="CRS" >}} a été créé**, parce-que la fabrique EPSG spécifie explicitement l’opération à appliquer pour certaines paires de {{< abbr title="Coordinate Reference System" text="CRS" >}}.
 Dans ces cas, l’opération spécifiée par EPSG a priorité par rapport aux paramètres de Bursa-Wolf
-(l’element <code>TOWGS84</code> de la version 1 du format <em>Well Known Text</em>).</p>
-<p>Une connexion à la base EPSG peut avoir été établie dans un environnement (typiquement celui JEE)
-et pas dans l’autre (typiquement un IDE) car uniquement le premier à un pilote <abbr title="Java DataBase Connectivity">JDBC</abbr>.
+(l’element `TOWGS84` de la version 1 du format _Well Known Text_).
+
+Une connexion à la base EPSG peut avoir été établie dans un environnement (typiquement celui JEE)
+et pas dans l’autre (typiquement un IDE) car uniquement le premier à un pilote {{< abbr title="Java DataBase Connectivity" text="JDBC" >}}.
 La méthode recommandée pour uniformiser les résultats est d’ajouter dans le second environnement (l’IDE)
 le même pilote que celui présent dans le premier environnement (JEE).
 Cela devrait être un des suivant : JavaDB (aussi nommé Derby), HSQL ou PostgreSQL.
-Assurez vous également que les <a href="epsg.html">paramètres de connexion à la base EPSG</a> sont les mêmes.</p>
-<h3 id="toWGS84">Puis-je présumer qu’il est toujours possible de transformer un <abbr title="Coordinate Reference System">CRS</abbr> arbitraire vers WGS84 ?<a class="headerlink" href="#toWGS84" title="Permanent link">&para;</a></h3>
-<p>Pour les <abbr title="Coordinate Reference System">CRS</abbr> 2D horizontaux créés avec la base de données EPSG, l’appel à <code>CRS.findOperation(…)</code> devrait toujours marcher.
-Pour les <abbr title="Coordinate Reference System">CRS</abbr> 3D ayant n’importe quel axe de hauteur autre que la hauteur ellipsoïdale, ou pour les <abbr title="Coordinate Reference System">CRS</abbr> 2D de type <code>EngineeringCRS</code>, la méthode peu échouer.
-Il reste à noter que dans le cas ou la méthode <code>CRS.findOperation(…)</code> ne lève pas d’erreur, l’appel à <code>MathTransform.transform(…)</code> peut
-produire des valeurs <code>NaN</code> or <code>Infinity</code>si la coordonnée transformée est éloignée de la zone de validité.</p>
-<h1 id="metadata">Métadonnées<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h1>
-<h2 id="metadata-implementation">Implementations sur mesures<a class="headerlink" href="#metadata-implementation" title="Permanent link">&para;</a></h2>
-<h3 id="metadata-proxy">Mes metadonnées sont stockées dans une forme de base de données. Implémenter toute les interfaces de GeoAPI est infaisable.<a class="headerlink" href="#metadata-proxy" title="Permanent link">&para;</a></h3>
-<p>Les développeurs n’ont pas besoin d’implémenter directement les interfaces de metadonnées.
+Assurez vous également que les [paramètres de connexion à la base EPSG](epsg.html) sont les mêmes.
+
+### Puis-je présumer qu’il est toujours possible de transformer un CRS arbitraire vers WGS84 ?    {#toWGS84}
+
+Pour les {{< abbr title="Coordinate Reference System" text="CRS" >}} 2D horizontaux créés avec la base de données EPSG, l’appel à `CRS.findOperation(...)` devrait toujours marcher.
+Pour les {{< abbr title="Coordinate Reference System" text="CRS" >}} 3D ayant n’importe quel axe de hauteur autre que la hauteur ellipsoïdale, ou pour les {{< abbr title="Coordinate Reference System" text="CRS" >}} 2D de type `EngineeringCRS`, la méthode peu échouer.
+Il reste à noter que dans le cas ou la méthode `CRS.findOperation(...)` ne lève pas d’erreur, l’appel à `MathTransform.transform(...)` peut
+produire des valeurs `NaN` or `Infinity`si la coordonnée transformée est éloignée de la zone de validité.
+
+# Métadonnées    {#metadata}
+
+## Implementations sur mesures   {#metadata-implementation}
+
+### Mes metadonnées sont stockées dans une forme de base de données. Implémenter toute les interfaces de GeoAPI est infaisable.    {#metadata-proxy}
+
+Les développeurs n’ont pas besoin d’implémenter directement les interfaces de metadonnées.
 Si le système de stockage sous-jacent peut accéder aux metadonnées à partir de leur classes et nom de propriétés
-(soit le nom java ou le nom <abbr title="International Organization for Standardization">ISO</abbr>/<abbr title="Open Geospatial Consortium">OGC</abbr>), alors il est possible d’implémenter un seul moteur pour tous les types de metadonnées
-et de laisser la Machine Virtuelle Java implémenter les interfaces GeoAPI à la volée, en utilisant la classe <code>java.lang.reflect.Proxy</code>.
-Pour plus de détails voir la javadoc de la classe <code>Proxy</code>, en gardant à l’esprit que le nom <abbr title="International Organization for Standardization">ISO</abbr>/<abbr title="Open Geospatial Consortium">OGC</abbr> d’une <code>java.lang.Class</code> ou
-<code>java.lang.reflect.Method</code> peut être obtenu comme suit :</p>
-<div class="codehilite"><pre><span class="n">UML</span> <span class="n">uml</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="na">getAnnotation</span><span class="o">(</span><span class="n">UML</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-<span class="k">if</span> <span class="o">(</span><span class="n">uml</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-    <span class="n">String</span> <span class="n">name</span> <span class="o">=</span> <span class="n">uml</span><span class="o">.</span><span class="na">identifier</span><span class="o">();</span>
-    <span class="c1">// Extraire les métadonnées ici.</span>
-<span class="o">}</span>
-</pre></div>
+(soit le nom java ou le nom {{< abbr title="International Organization for Standardization" text="ISO" >}}/{{< abbr title="Open Geospatial Consortium" text="OGC" >}}), alors il est possible d’implémenter un seul moteur pour tous les types de metadonnées
+et de laisser la Machine Virtuelle Java implémenter les interfaces GeoAPI à la volée, en utilisant la classe `java.lang.reflect.Proxy`.
+Pour plus de détails voir la javadoc de la classe `Proxy`, en gardant à l’esprit que le nom {{< abbr title="International Organization for Standardization" text="ISO" >}}/{{< abbr title="Open Geospatial Consortium" text="OGC" >}} d’une `java.lang.Class` ou
+`java.lang.reflect.Method` peut être obtenu comme suit :
 
+{{< highlight java >}}
+UML uml = method.getAnnotation(UML.class);
+if (uml != null) {
+    String name = uml.identifier();
+    // Extraire les métadonnées ici.
+}
+{{< / highlight >}}
 
-<p>Cette approche est utilisée dans le paquet <code>org.apache.sis.metadata.sql</code> pour fournir une implémentation
-de toutes les interfaces de metadonnées de GeoAPI à partir d’une base de données SQL.</p>
-<h3 id="metadata-unknownClass">Je n’arrive pas à écrire mon implémentation de metadonnée<a class="headerlink" href="#metadata-unknownClass" title="Permanent link">&para;</a></h3>
-<p>Les classes données à un marshaller JAXB doivent contenir des annotations JAXB,
-sinon l’exception suivante sera lancée :</p>
-<div class="codehilite"><pre>javax.xml.bind.JAXBException: class MyCustomClass nor any of its super class is known to this context.
-</pre></div>
+Cette approche est utilisée dans le paquet `org.apache.sis.metadata.sql` pour fournir une implémentation
+de toutes les interfaces de metadonnées de GeoAPI à partir d’une base de données SQL.
 
+### Je n’arrive pas à écrire mon implémentation de metadonnée  {#metadata-unknownClass}
 
-<p>La solution de contournement la plus simple est de décorer l’implémentation dans une des implémentations
-fournies dans le paquet <code>org.apache.metadata.iso</code>.
+Les classes données à un marshaller JAXB doivent contenir des annotations JAXB,
+sinon l’exception suivante sera lancée :
+
+{{< highlight text >}}
+javax.xml.bind.JAXBException: class MyCustomClass nor any of its super class is known to this context.
+{{< / highlight >}}
+
+La solution de contournement la plus simple est de décorer l’implémentation dans une des implémentations
+fournies dans le paquet `org.apache.metadata.iso`.
 Toutes les implémentations du SDK fournissent des constructeurs de copies peu profondes pour rendre cela plus simple.
 Il est uniquement nécéssaire de décorer la classes racine, pas les attributs.
-Les valeurs des attributs seront décorées automatiquement au besoin par les adaptateurs JAXB.</p>
+Les valeurs des attributs seront décorées automatiquement au besoin par les adaptateurs JAXB.
